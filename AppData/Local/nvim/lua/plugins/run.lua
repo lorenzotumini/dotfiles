@@ -16,10 +16,11 @@ return {
 				go = "cd $dir && go run $fileName",
 				odin = "cd $dir && odin run $dir",
 				clojure = "cd $dir && clj -M $fileName",
-				toy = "cd $dir && toy --file $fileName",
+				toy = "cd $dir && toy $dir",
 				cuda = "cd $dir && nvcc $fileName -o $fileNameWithoutExt && $fileNameWithoutExt",
 				haskell = "cd $dir && runghc $fileName",
-				cpp =  "cd $dir && g++ -std=c++23 $fileName -o $fileNameWithoutExt && $fileNameWithoutExt"
+				cpp =  "cd $dir && g++ -std=c++23 $fileName -o $fileNameWithoutExt && $fileNameWithoutExt",
+				icon = "cd $dir && icont $fileName && $fileNameWithoutExt"
 			}
 
 			if env.is_windows and env.readable("C:/iverilog/bin/simulate.ps1") then

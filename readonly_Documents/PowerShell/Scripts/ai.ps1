@@ -8,6 +8,7 @@ function ai {
     Write-Host "7) vibe (mistral)"
     Write-Host "8) kimi"
     Write-Host "9) qwen"
+    Write-Host "10) hermes"
 
     $choice = (Read-Host "Select AI").ToLower()
 
@@ -21,6 +22,7 @@ function ai {
         { $_ -in "7","vibe","mistral" } { vibe; break }
         { $_ -in "8","kimi" } { kimi; break }
         { $_ -in "9","qwen" } { qwen; break }
+        { $_ -in "10","hermes" } { hermes; break }
         default { Write-Host "Invalid choice" }
     }
 }
