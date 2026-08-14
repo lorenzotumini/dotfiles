@@ -24,7 +24,7 @@ return {
 		misc.setup_restore_cursor()
 
 		-- works only on Windows Terminal
-		if not (vim.env.WEZTERM_EXECUTABLE or vim.env.ALACRITTY_LOG) then
+		if not (vim.env.WEZTERM_EXECUTABLE or vim.env.ALACRITTY_LOG or vim.env.HERDR or vim.env.HERDR_ENV or vim.env.HERDR_PANE_ID) then
 			misc.setup_termbg_sync({ explicit_reset = true })
 		end
 
