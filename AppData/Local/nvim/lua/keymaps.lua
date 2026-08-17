@@ -36,6 +36,8 @@ vim.keymap.set("t", "<esc>", "<c-\\><c-n>", { desc = "Exit terminal mode" })
 -- vim.keymap.set("n", "<leader>v", "<cmd>e $MYVIMRC<CR>", { desc = "Edit config" })
 -- vim.keymap.set({ "n", "v" }, "<leader>o", ":update<CR> :source<CR>", { desc = "Save and source file" })
 
+vim.keymap.set("n", "<leader>mt", "<cmd>JupytextSyncToggle<CR>", { desc = "Toggle Jupytext sync" })
+
 vim.keymap.set(
 	"n",
 	"<leader>kc",

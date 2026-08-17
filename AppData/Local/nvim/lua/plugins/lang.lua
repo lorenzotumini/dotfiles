@@ -91,8 +91,4 @@ return {
 			})
 		end,
 	},
-	{
-		"https://github.com/rluba/jai.vim.git",
-		ft = "jai",
-	},
 }
