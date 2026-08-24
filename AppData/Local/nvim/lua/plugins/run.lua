@@ -1,11 +1,10 @@
 return {
 	{
 		"CRAG666/code_runner.nvim",
-		commit = "45dfea066a6110abcbc3cd361457ac3cbaefd68b",
 		event = "VeryLazy",
-		dependencies = {
-			-- "CRAG666/betterTerm.nvim", -- for better_term mode
-		},
+		-- dependencies = {
+		-- 	"CRAG666/betterTerm.nvim", -- for better_term mode
+		-- },
 		config = function()
 			local env = require("utils.env")
 			local filetype = {
@@ -19,18 +18,21 @@ return {
 				toy = "cd $dir && toy $dir",
 				cuda = "cd $dir && nvcc $fileName -o $fileNameWithoutExt && $fileNameWithoutExt",
 				haskell = "cd $dir && runghc $fileName",
-				cpp =  "cd $dir && g++ -std=c++23 $fileName -o $fileNameWithoutExt && $fileNameWithoutExt",
-				icon = "cd $dir && icont $fileName && $fileNameWithoutExt"
+				cpp = "cd $dir && g++ -std=c++23 $fileName -o $fileNameWithoutExt && $fileNameWithoutExt",
+				icon = "cd $dir && icont $fileName && $fileNameWithoutExt",
+				rust = "cd $dir && rustc $fileName && $fileNameWithoutExt",
 			}
 
 			if env.is_windows and env.readable("C:/iverilog/bin/simulate.ps1") then
-				filetype.verilog = 'pwsh -NoProfile -ExecutionPolicy Bypass -File "C:/iverilog/bin/simulate.ps1" "$file"'
+				filetype.verilog =
+					'pwsh -NoProfile -ExecutionPolicy Bypass -File "C:/iverilog/bin/simulate.ps1" "$file"'
 			elseif env.executable("iverilog") and env.executable("vvp") then
 				filetype.verilog = "cd $dir && iverilog -o sim.out $fileName && vvp sim.out"
 			end
 
 			require("code_runner").setup({
 				mode = "term", -- term, tab, float, toggle, vimux, better_term
+				root_markers = {},
 				term = {
 					position = "below",
 					-- "bot" goes over center.lua,

@@ -232,8 +232,8 @@ __step "Aliases & functions"
 # -------- CUSTOM SCRIPTS --------
 # . "$HOME\Documents\PowerShell\Scripts\venv.ps1"
 # __step "venv.ps1"
-. "$HOME\Documents\PowerShell\Scripts\ai.ps1"
-__step "ai.ps1"
+# . "$HOME\Documents\PowerShell\Scripts\ai.ps1"
+# __step "ai.ps1"
 
 if ($env:PROFILE_TIMING) {
 	Write-Host ("{0,-28} {1,6:N0} ms" -f "TOTAL", $__swTotal.ElapsedMilliseconds) -ForegroundColor Yellow
