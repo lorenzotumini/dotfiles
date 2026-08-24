@@ -32,6 +32,11 @@ return {
 				detached = false,
 			},
 		}
+		dap.adapters.toy = {
+			type = "executable",
+			command = "C:/Toy/bin/toy-dap.exe",
+			options = { detached = false }, -- useful on Windows
+		}
 		dap.configurations.c = {
 			-- install codelldb from Mason
 			{
@@ -61,5 +66,17 @@ return {
 		}
 		dap.configurations.cpp = dap.configurations.c
 		dap.configurations.rust = dap.configurations.c
+		dap.configurations.toy = {
+			{
+				type = "toy",
+				request = "launch",
+				name = "Debug current Toy file",
+				program = "${file}",
+				cwd = "${workspaceFolder}",
+				runtimeExecutable = "toy.exe",
+				stopOnEntry = true,
+				args = {},
+			},
+		}
 	end,
 }

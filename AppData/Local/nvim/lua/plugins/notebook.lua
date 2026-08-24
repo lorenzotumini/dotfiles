@@ -1,20 +1,62 @@
+local env = require("utils.env")
+local term_program = (vim.env.TERM_PROGRAM or ""):lower()
+local term = (vim.env.TERM or ""):lower()
+local use_native_images = env.is_linux
+	and not env.is_wsl
+	and (term_program == "ghostty" or term:match("ghostty") or term_program == "kitty" or term == "xterm-kitty")
+local use_wezterm_images = (env.is_windows or env.is_wsl)
+	and (vim.env.WEZTERM_EXECUTABLE ~= nil or term_program == "wezterm")
+
+local molten_image_provider = "none"
+local molten_dependencies = {}
+
+if use_native_images then
+	molten_image_provider = "image.nvim"
+	molten_dependencies = {
+		{
+			"3rd/image.nvim",
+			version = "1.5.1",
+			build = false,
+			opts = {
+				backend = "kitty",
+				processor = "magick_cli",
+				integrations = {},
+				max_width = 100,
+				max_height = 12,
+				max_height_window_percentage = math.huge,
+				max_width_window_percentage = math.huge,
+				window_overlap_clear_enabled = true,
+				window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "snacks_notif", "" },
+			},
+		},
+	}
+elseif use_wezterm_images then
+	molten_image_provider = "wezterm"
+	molten_dependencies = { "willothy/wezterm.nvim" }
+end
+
 return {
 	{
 		-- this is a remote plugin, may need to run :UpdateRemotePlugins after update,
 		-- see https://github.com/benlubas/molten-nvim/blob/main/docs/Windows.md
 		"benlubas/molten-nvim",
 		build = ":UpdateRemotePlugins",
-		dependencies = "willothy/wezterm.nvim",
+		dependencies = molten_dependencies,
 		init = function()
-			-- this config works with wezterm on Windows,
-			-- on POSIX images can be shown directly inside nvim
-			vim.g.molten_auto_open_output = false -- cannot be true if molten_image_provider = "wezterm"
+			-- WezTerm uses a dedicated split, while compatible Linux terminals
+			-- render images directly in Neovim through image.nvim.
+			vim.g.molten_auto_open_output = not use_wezterm_images
 			vim.g.molten_output_show_more = true
-			vim.g.molten_image_provider = "wezterm" -- image.nvim does not work on windows
+			vim.g.molten_image_provider = molten_image_provider
+			vim.g.molten_image_location = "both"
 			vim.g.molten_output_virt_lines = true
 			vim.g.molten_split_direction = "right" -- "left", "top", "bottom"
 			vim.g.molten_split_size = 40 -- 0-100% size of the screen dedicated to the output window
 			vim.g.molten_virt_text_output = true
+			vim.g.molten_virt_text_max_lines = 12
+			vim.g.molten_output_win_max_height = 20
+			vim.g.molten_tick_rate = 200
+			vim.g.molten_wrap_output = true
 			vim.g.molten_use_border_highlights = true
 			vim.g.molten_virt_lines_off_by_1 = false
 			vim.g.molten_auto_image_popup = false

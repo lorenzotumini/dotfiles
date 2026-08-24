@@ -60,13 +60,17 @@ end
 
 function M.default_shell()
 	if M.is_windows and M.executable("pwsh") then
-		return "pwsh -NoLogo"
+		local profile = M.config_path("pwsh_nvim_profile.ps1")
+		if M.readable(profile) then
+			return "pwsh -NoLogo -NoProfile -NoExit -File " .. vim.fn.shellescape(profile)
+		end
+		return "pwsh -NoLogo -NoProfile"
 	end
 	if not M.is_windows and vim.env.SHELL and vim.env.SHELL ~= "" then
 		return vim.env.SHELL
 	end
 	if M.is_windows and M.executable("powershell.exe") then
-		return "powershell.exe -NoLogo"
+		return "powershell.exe -NoLogo -NoProfile"
 	end
 	if M.is_windows then
 		return "cmd.exe"

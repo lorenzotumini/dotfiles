@@ -42,6 +42,15 @@ M.theme_configs = {
 	end,
 }
 
+-- Theme-specific highlights that must be applied after :colorscheme,
+-- because loading a colorscheme clears existing highlight definitions.
+M.theme_overrides = {
+	["gruber-darker"] = function()
+		vim.api.nvim_set_hl(0, "@property", { link = "GruberDarkerNiagara" })
+		vim.api.nvim_set_hl(0, "CmpItemKindProperty", { link = "GruberDarkerNiagara" })
+	end,
+}
+
 -- Track which themes have been setup to avoid redundant calls
 M.setup_cache = {}
 
@@ -100,6 +109,12 @@ function M.setup_theme(name)
 	return true
 end
 
+function M.apply_theme_overrides(name)
+	if M.theme_overrides[name] then
+		M.theme_overrides[name]()
+	end
+end
+
 -- Function to safely apply a colorscheme
 function M.safe_colorscheme(name)
 	if not name or name == "" then
@@ -115,6 +130,8 @@ function M.safe_colorscheme(name)
 		vim.notify("Failed to load colorscheme: " .. name .. "\n" .. tostring(err), vim.log.levels.WARN)
 		return false
 	end
+
+	M.apply_theme_overrides(name)
 
 	return true
 end
@@ -164,6 +181,7 @@ function M.setup_autocmd()
 	vim.api.nvim_create_autocmd("ColorScheme", {
 		group = group,
 		callback = function(args)
+			M.apply_theme_overrides(args.match)
 			M.save_current_theme(args.match)
 		end,
 	})

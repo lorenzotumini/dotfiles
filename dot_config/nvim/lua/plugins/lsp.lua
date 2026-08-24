@@ -60,7 +60,7 @@ return {
 				},
 			})
 
-			local toy_lsp = "path/to/toy/installation/toy-lsp.exe"
+			local toy_lsp = "C:/Toy/bin/toy-lsp.exe"
 			if env.readable(toy_lsp) or env.executable("toy-lsp") then
 				vim.lsp.config("toyls", {
 					cmd = env.executable("toy-lsp") and { "toy-lsp" } or { toy_lsp },
