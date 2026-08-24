@@ -27,7 +27,7 @@ chezmoi applies different Neovim config trees depending on the OS:
 | Windows | `AppData/Local/nvim` | `~/AppData/Local/nvim` |
 | Linux / WSL | `dot_config/nvim` | `~/.config/nvim` |
 
-The Linux/WSL config is a mirror of the Windows config and is allowed to lag behind.
+The Linux/WSL config is kept aligned with the Windows config.
 
 ## Windows setup
 

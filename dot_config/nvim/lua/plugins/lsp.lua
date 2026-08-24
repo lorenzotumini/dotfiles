@@ -14,24 +14,10 @@ return {
 	{
 		"williamboman/mason-lspconfig.nvim",
 		event = "VeryLazy",
-		opts = {
-			-- this is not needed to use an lsp, once installed manually form Mason it works automatically
-			-- this is useful when importing this config to a new computer to install lsp automatically
-			ensure_installed = {
-				"clangd", -- C server
-				"lua_ls", -- Lua server
-				"stylua", -- Lua format
-				"ts_ls", -- JS server
-				"tinymist", -- Typst server
-				"ty", -- Py server
-				"ruff", -- Py lint, format
-				-- "pyright", -- Py server
-				-- "black", -- Py format
-				"gopls", -- Go server
-				"ols", -- Odin server
-				"clojure_lsp", -- Clojure server
-			},
-		},
+		-- Deliberately do not use ensure_installed: language ecosystems such as
+		-- Node and Go are optional machine capabilities, not editor bootstrap
+		-- dependencies. The bridge still auto-enables servers installed manually.
+		opts = {},
 	},
 	{
 		"neovim/nvim-lspconfig",
