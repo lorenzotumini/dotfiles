@@ -10,6 +10,8 @@ README.md
 .config/alacritty/**
 .config/fuzzel/**
 .config/ghostty/**
+.config/gtk-3.0/**
+.config/gtk-4.0/**
 .config/herdr/**
 .config/hypr/**
 .config/mako/**
