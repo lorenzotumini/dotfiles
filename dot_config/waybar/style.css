@@ -70,6 +70,7 @@ window#waybar {
 #network,
 #cpu,
 #memory,
+#custom-gpu,
 #custom-power {
     padding: 0 7px;
 }
@@ -80,6 +81,7 @@ window#waybar {
 #network:hover,
 #cpu:hover,
 #memory:hover,
+#custom-gpu:hover,
 #custom-power:hover {
     background: #313244;
     border-radius: 6px;
@@ -107,6 +109,10 @@ window#waybar {
 
 #memory {
     color: #fab387;
+}
+
+#custom-gpu {
+    color: #cba6f7;
 }
 
 #custom-power {

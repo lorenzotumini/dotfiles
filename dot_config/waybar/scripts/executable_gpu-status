@@ -1,0 +1,33 @@
+#!/bin/sh
+
+query="$(nvidia-smi \
+    --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw,name \
+    --format=csv,noheader,nounits 2>/dev/null | head -n 1)" || exit 0
+
+[ -n "$query" ] || exit 0
+
+IFS=, read -r usage memory_used memory_total temperature power name <<EOF
+$query
+EOF
+
+trim() {
+    value=$1
+    value=${value#"${value%%[![:space:]]*}"}
+    value=${value%"${value##*[![:space:]]}"}
+    printf '%s' "$value"
+}
+
+usage=$(trim "$usage")
+memory_used=$(trim "$memory_used")
+memory_total=$(trim "$memory_total")
+temperature=$(trim "$temperature")
+power=$(trim "$power")
+name=$(trim "$name")
+
+case $usage in
+    ''|*[!0-9]*) exit 0 ;;
+esac
+
+printf '{"text":"󰢮 %s%%","tooltip":"%s\\nUsage: %s%%\\nVRAM: %s / %s MiB\\nTemperature: %s°C\\nPower: %s W","percentage":%s}\n' \
+    "$usage" "$name" "$usage" "$memory_used" "$memory_total" "$temperature" "$power" "$usage"
+
