@@ -19,6 +19,7 @@ README.md
 .config/mako/**
 .config/networkmanager-dmenu/**
 .config/starship.toml
+.config/systemd/**
 .config/waybar/**
 .config/xkb/**
 .config/xdg-desktop-portal/**
