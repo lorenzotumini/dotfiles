@@ -5,7 +5,7 @@
     "spacing": 8,
     "modules-left": ["hyprland/workspaces", "hyprland/workspaces#scratchpad", "hyprland/window"],
     "modules-center": ["clock"],
-    "modules-right": ["tray", "idle_inhibitor", "bluetooth", "pulseaudio", "network", "cpu", "memory", "custom/gpu", "custom/power"],
+    "modules-right": ["tray", "custom/idle-inhibitor", "bluetooth", "pulseaudio", "network", "cpu", "memory", "custom/gpu", "custom/power"],
 
     "hyprland/workspaces": {
         "format": "{name}",
@@ -35,14 +35,11 @@
         "spacing": 6,
         "show-passive-items": true
     },
-    "idle_inhibitor": {
-        "format": "{icon}",
-        "format-icons": {
-            "activated": "󰅶",
-            "deactivated": "󰾪"
-        },
-        "tooltip-format-activated": "Automatic locking inhibited",
-        "tooltip-format-deactivated": "Automatic locking enabled"
+    "custom/idle-inhibitor": {
+        "exec": "$HOME/.config/waybar/scripts/idle-inhibitor status",
+        "return-type": "json",
+        "interval": 2,
+        "on-click-right": "$HOME/.config/waybar/scripts/idle-inhibitor toggle"
     },
     "bluetooth": {
         "format": "󰂯",

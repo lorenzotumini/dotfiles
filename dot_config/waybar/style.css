@@ -63,7 +63,7 @@ window#waybar {
     font-weight: bold;
 }
 
-#idle_inhibitor,
+#custom-idle-inhibitor,
 #bluetooth,
 #tray,
 #pulseaudio,
@@ -75,7 +75,7 @@ window#waybar {
     padding: 0 7px;
 }
 
-#idle_inhibitor:hover,
+#custom-idle-inhibitor:hover,
 #bluetooth:hover,
 #pulseaudio:hover,
 #network:hover,
@@ -87,7 +87,7 @@ window#waybar {
     border-radius: 6px;
 }
 
-#idle_inhibitor.activated {
+#custom-idle-inhibitor.activated {
     color: #f9e2af;
 }
 

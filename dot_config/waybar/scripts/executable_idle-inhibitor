@@ -1,0 +1,42 @@
+#!/bin/sh
+
+unit=waybar-idle-inhibitor.service
+
+active() {
+    systemctl --user is-active --quiet "$unit"
+}
+
+status() {
+    if active; then
+        printf '%s\n' '{"text":"󰅶","tooltip":"Automatic lock and display-off inhibited\nRight click: restore idle behavior","class":"activated"}'
+    else
+        printf '%s\n' '{"text":"󰾪","tooltip":"Automatic lock and display-off enabled\nRight click: inhibit idle behavior","class":"deactivated"}'
+    fi
+}
+
+toggle() {
+    if active; then
+        systemctl --user stop "$unit"
+        notify-send "Automatic lock and display-off enabled"
+    else
+        systemd-run --user --quiet --collect \
+            --unit=waybar-idle-inhibitor \
+            systemd-inhibit \
+                --what=idle \
+                --who=Waybar \
+                --why="Presentation mode" \
+                --mode=block \
+                sleep infinity
+        notify-send "Automatic lock and display-off inhibited"
+    fi
+}
+
+case ${1:-status} in
+    status) status ;;
+    toggle) toggle ;;
+    *)
+        printf 'usage: %s [status|toggle]\n' "$0" >&2
+        exit 2
+        ;;
+esac
+
