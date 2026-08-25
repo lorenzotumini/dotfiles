@@ -21,6 +21,7 @@ README.md
 .local/bin/sioyek
 .local/share/applications
 .local/share/applications/sioyek.desktop
+.ssh/config
 .zshrc
 {{ else }}
 AppData/**

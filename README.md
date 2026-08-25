@@ -44,6 +44,10 @@ configuration. On Windows, the Neovim hook deliberately stops if
 `~/AppData/Local/nvim` is an existing real directory: preserve or import its
 contents before replacing it with the managed junction.
 
+The Linux GitHub SSH rule expects a machine-local `~/.ssh/id_ed25519_github`
+key. Generate and register that key separately; private keys are never managed
+by chezmoi.
+
 ## Workflow
 
 Edit the source repository, inspect the result, and apply it locally:

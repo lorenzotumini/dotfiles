@@ -18,3 +18,4 @@
 dot_config/mako/config text eol=lf
 dot_local/bin/* text eol=lf
 dot_zshrc text eol=lf
+private_dot_ssh/private_config text eol=lf
