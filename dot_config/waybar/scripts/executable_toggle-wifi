@@ -1,0 +1,17 @@
+#!/bin/sh
+
+state="$(nmcli radio wifi 2>/dev/null)"
+
+case $state in
+    enabled)
+        nmcli radio wifi off && notify-send "Wi-Fi disabled"
+        ;;
+    disabled)
+        nmcli radio wifi on && notify-send "Wi-Fi enabled"
+        ;;
+    *)
+        notify-send -u critical "Wi-Fi state unavailable"
+        exit 1
+        ;;
+esac
+

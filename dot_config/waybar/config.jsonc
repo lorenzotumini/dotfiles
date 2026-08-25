@@ -72,9 +72,9 @@
         "format-wifi": "󰤨 {essid}",
         "format-ethernet": "󰈀 {ipaddr}",
         "format-disconnected": "󰤭 offline",
-        "tooltip-format": "{ifname}: {ipaddr}/{cidr}\nGateway: {gwaddr}\nLeft click: Wi-Fi connections\nRight click: advanced settings",
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr}\nGateway: {gwaddr}\nLeft click: manage connections\nRight click: toggle Wi-Fi",
         "on-click": "networkmanager_dmenu",
-        "on-click-right": "env GTK_THEME=Adwaita:dark nm-connection-editor"
+        "on-click-right": "$HOME/.config/waybar/scripts/toggle-wifi"
     },
     "cpu": {
         "interval": 2,
