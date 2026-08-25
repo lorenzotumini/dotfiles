@@ -45,9 +45,6 @@ window#waybar {
 #workspaces button.special {
     color: #7f849c;
     background: transparent;
-    border-left: 1px solid #313244;
-    margin-left: 7px;
-    padding-left: 9px;
 }
 
 #workspaces button.special.active {

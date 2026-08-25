@@ -14,16 +14,7 @@
         "all-outputs": false
     },
     "hyprland/workspaces#scratchpad": {
-        "format": "scratch {windows}",
-        "format-window-separator": " ",
-        "window-rewrite-default": "•",
-        "window-rewrite": {
-            "class<Spotify>": "󰓇",
-            "class<firefox>": "󰈹",
-            "class<thunderbird>": "󰇮",
-            "class<org.gnome.Nautilus>": "󰉋",
-            "class<com.mitchellh.ghostty>": ""
-        },
+        "format": "scratch",
         "show-special": true,
         "special-visible-only": false,
         "all-outputs": false,
