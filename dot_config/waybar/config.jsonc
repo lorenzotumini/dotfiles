@@ -51,10 +51,11 @@
         "format-on": "󰂯",
         "format-connected": "󰂱 {num_connections}",
         "format-no-controller": "",
-        "tooltip-format": "Bluetooth: {status}",
-        "tooltip-format-connected": "Bluetooth: {status}\n{device_enumerate}",
+        "tooltip-format": "Bluetooth: {status}\nLeft click: manage devices\nRight click: toggle power",
+        "tooltip-format-connected": "Bluetooth: {status}\n{device_enumerate}\nLeft click: manage devices\nRight click: toggle power",
         "tooltip-format-enumerate-connected": "{device_alias}",
-        "on-click": "blueman-manager"
+        "on-click": "env GTK_THEME=Adwaita:dark blueman-manager",
+        "on-click-right": "$HOME/.config/waybar/scripts/toggle-bluetooth"
     },
     "pulseaudio": {
         "format": "{icon} {volume}%",
@@ -71,8 +72,9 @@
         "format-wifi": "󰤨 {essid}",
         "format-ethernet": "󰈀 {ipaddr}",
         "format-disconnected": "󰤭 offline",
-        "tooltip-format": "{ifname}: {ipaddr}/{cidr}\nGateway: {gwaddr}",
-        "on-click": "nm-connection-editor"
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr}\nGateway: {gwaddr}\nLeft click: Wi-Fi connections\nRight click: advanced settings",
+        "on-click": "networkmanager_dmenu",
+        "on-click-right": "env GTK_THEME=Adwaita:dark nm-connection-editor"
     },
     "cpu": {
         "interval": 2,

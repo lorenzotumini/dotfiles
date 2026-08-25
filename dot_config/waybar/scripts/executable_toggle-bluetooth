@@ -1,0 +1,17 @@
+#!/bin/sh
+
+powered="$(bluetoothctl show 2>/dev/null | awk '/Powered:/ { print $2; exit }')"
+
+case $powered in
+    yes)
+        bluetoothctl power off >/dev/null && notify-send "Bluetooth disabled"
+        ;;
+    no)
+        bluetoothctl power on >/dev/null && notify-send "Bluetooth enabled"
+        ;;
+    *)
+        notify-send -u critical "Bluetooth controller unavailable"
+        exit 1
+        ;;
+esac
+

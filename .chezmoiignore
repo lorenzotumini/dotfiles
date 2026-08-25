@@ -8,6 +8,8 @@ README.md
 # OS-specific config trees
 {{ if eq .chezmoi.os "windows" }}
 .config/alacritty/**
+.config/autostart/**
+.config/btop/**
 .config/fuzzel/**
 .config/ghostty/**
 .config/gtk-3.0/**
@@ -15,9 +17,11 @@ README.md
 .config/herdr/**
 .config/hypr/**
 .config/mako/**
+.config/networkmanager-dmenu/**
 .config/starship.toml
 .config/waybar/**
 .config/xkb/**
+.config/xdg-desktop-portal/**
 .local/bin/power-menu
 .local/bin/sioyek
 .local/share/applications
