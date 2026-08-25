@@ -85,6 +85,7 @@ __step "  Modules: registration"
 Register-EngineEvent -SourceIdentifier PowerShell.OnIdle -MaxTriggerCount 1 -Action {
 	Import-Module Microsoft.WinGet.CommandNotFound -ErrorAction SilentlyContinue
 	Import-Module PSFzf -ErrorAction SilentlyContinue
+	Import-Module Terminal-Icons -ErrorAction SilentlyContinue
 	if (Get-Module PSFzf) {
 		Set-PsFzfOption -PSReadlineChordReverseHistory 'Ctrl+r'
 		Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t'

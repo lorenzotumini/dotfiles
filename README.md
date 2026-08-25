@@ -1,89 +1,68 @@
 # dotfiles
 
-Personal configuration files managed with [chezmoi](https://www.chezmoi.io/).
+Cross-platform dotfiles managed with [chezmoi](https://www.chezmoi.io/).
+The Git repository is the source of truth; files in the home directory are
+generated targets and do not propagate changes back automatically.
 
-## Components
+## Windows and Linux
 
-- **Windows shell**: PowerShell + Oh My Posh
-- **Linux shell**: Zsh + Starship
-- **Windows term**: Windows Terminal / WezTerm / Alacritty
-- **Linux terminal**: Ghostty
-- **editor**: Neovim
-- **multiplexer**: Herdr
-- **PDF reader**: Sioyek
+Both operating systems use this repository. `.chezmoiignore` prevents complete
+OS-specific trees from being created on the other OS: Windows skips Linux-only
+configuration, while Linux skips `AppData`, PowerShell and other Windows-only
+files.
 
-## Requirements
+Configuration shared by both systems uses one of three patterns:
 
-- chezmoi
-- git
-- PowerShell 7 (`pwsh`) on Windows
-- Neovim **0.12+** on both Windows and Linux/WSL
-- ripgrep for Telescope
+- one identical source file or tree, as with Neovim;
+- a shared chezmoi template with small OS-specific values, as with Herdr and
+  Alacritty;
+- one application-native configuration containing OS conditionals, as with
+  WezTerm.
 
-On Linux avoid old distro Neovim packages if they are below 0.12.
+Neovim's only source tree is `dot_config/nvim`, applied as `~/.config/nvim` on
+both systems. Windows also creates the junction
+`~/AppData/Local/nvim -> ~/.config/nvim`, allowing Neovim to use its native path
+without maintaining a second configuration copy.
 
-## Layout
+Sioyek is stored once under `dot_config/sioyek`. Windows copies it to Sioyek's
+required `C:\ProgramData\sioyek` location after apply; Linux uses it directly.
 
-Neovim has one canonical configuration tree on every OS:
+## First initialization
 
-| OS | source path | target path |
-| --- | --- | --- |
-| Windows | `dot_config/nvim` | `~/.config/nvim` |
-| Linux / WSL | `dot_config/nvim` | `~/.config/nvim` |
+Install Git and chezmoi first. Windows also needs PowerShell 7 (`pwsh`) before
+applying because the setup hooks use it. Chezmoi manages configuration files;
+it does not install the applications or system packages they configure.
 
-On Windows, an idempotent post-apply script creates the directory junction
-`~/AppData/Local/nvim -> ~/.config/nvim`. Neovim therefore finds the config in
-its native Windows location while both systems use the exact same physical
-files. The junction also keeps `stdpath("config")` behavior compatible with
-plugins and the existing configuration.
-
-## Shell history and secrets
-
-Shell history is machine-local and is not managed by chezmoi. On both PowerShell
-and Zsh, prefix a sensitive command with one space to prevent it from being saved
-or resurfacing as an inline autosuggestion. Prefer `secret-env VARIABLE_NAME` on
-Zsh, password-manager integration, or a tool's standard-input/file option over
-putting a secret directly on a command line.
-
-## Application configuration
-
-Ghostty, Herdr, and Sioyek are managed here as user configuration. Herdr uses a
-shared template with `pwsh` on Windows and `zsh` on Linux. Sioyek is stored at
-`~/.config/sioyek` on both systems; on Windows an idempotent `run_onchange`
-script also copies changes to the application's active `C:\ProgramData\sioyek`
-directory after `chezmoi apply`.
-
-On the NVIDIA Linux workstation, Sioyek is launched through a user-level
-wrapper with `QT_QPA_PLATFORM=xcb`; its native Qt Wayland/OpenGL path starts a
-process but fails to create a window. Hyprland disables fractional resampling
-for XWayland, while the wrapper applies `QT_SCALE_FACTOR=1.25`, keeping the
-fallback sharp and scoped to Sioyek.
-
-Alacritty's active configuration and Carbonfox theme are shared templates, with
-an OS-specific shell. WezTerm uses one Lua configuration that selects PowerShell
-on Windows and Zsh on Linux; Windows-only backdrop and positioning behavior is
-guarded accordingly. These configs remain reproducible even on a machine where
-the optional terminal itself is not installed.
-
-## Windows setup
-
-```powershell
-chezmoi init <repo-url>
+```sh
+chezmoi init https://github.com/lorenzotumini/dotfiles.git
 chezmoi diff
 chezmoi apply
 ```
 
-## Linux / WSL setup
+Review the diff before the first apply, especially on a machine with existing
+configuration. On Windows, the Neovim hook deliberately stops if
+`~/AppData/Local/nvim` is an existing real directory: preserve or import its
+contents before replacing it with the managed junction.
 
-Use native Linux paths inside WSL, not `/mnt/c/...`.
+## Workflow
 
-```bash
-sudo apt update
-sudo apt install -y git curl ripgrep fd-find build-essential unzip
-# Install Neovim 0.12+ from an upstream release/AppImage/bob/mise/etc.
-chezmoi init <repo-url>
+Edit the source repository, inspect the result, and apply it locally:
+
+```sh
+chezmoi cd
+# edit files
 chezmoi diff
 chezmoi apply
-nvim --version
-nvim --headless '+Lazy sync' '+qa'
+git add -A
+git commit
+git push
 ```
+
+On another machine, pull and apply in one operation:
+
+```sh
+chezmoi update
+```
+
+If a target file was edited directly, use `chezmoi re-add <target>` before
+committing to copy that change back into the source state.
