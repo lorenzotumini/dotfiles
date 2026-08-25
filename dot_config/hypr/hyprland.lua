@@ -19,7 +19,7 @@ hl.on("hyprland.start", function ()
     -- with this minimal desktop. Waybar provides the Bluetooth icon.
     hl.exec_cmd([[gsettings set org.gnome.desktop.interface color-scheme prefer-dark]])
     hl.exec_cmd([[gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark]])
-    hl.exec_cmd([[gsettings set org.blueman.general plugin-list "['!StatusIcon']"]])
+    hl.exec_cmd([[gsettings set org.blueman.general plugin-list "['!StatusNotifierItem']"]])
     hl.exec_cmd("hyprpaper")
     hl.exec_cmd("waybar")
     hl.exec_cmd("mako")
