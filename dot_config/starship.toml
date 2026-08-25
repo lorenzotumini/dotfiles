@@ -47,7 +47,4 @@ format = "[$symbol]($style) "
 [character]
 success_symbol = "[⮞](bold #D4AAFC)"
 error_symbol = "[⮞](bold #E36464)"
-vimcmd_symbol = "[❮](bold #56B6C2)"
-vimcmd_replace_one_symbol = "[❮](bold #DDB15F)"
-vimcmd_replace_symbol = "[❮](bold #DDB15F)"
-vimcmd_visual_symbol = "[❮](bold #62ED8B)"
+vimcmd_symbol = "[⮜](bold #56B6C2)"
