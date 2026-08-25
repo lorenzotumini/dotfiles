@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -u
+
+choice=$(printf '%s\n' \
+  'Lock' \
+  'Suspend' \
+  'Log out' \
+  'Restart' \
+  'Shut down' | fuzzel --dmenu --prompt='Power > ')
+
+case "$choice" in
+  'Lock')
+    hyprlock
+    ;;
+  'Suspend')
+    systemctl suspend
+    ;;
+  'Log out')
+    loginctl terminate-session "${XDG_SESSION_ID:?Missing XDG session ID}"
+    ;;
+  'Restart')
+    systemctl reboot
+    ;;
+  'Shut down')
+    systemctl poweroff
+    ;;
+  '')
+    exit 0
+    ;;
+esac

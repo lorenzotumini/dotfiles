@@ -8,9 +8,14 @@ README.md
 # OS-specific config trees
 {{ if eq .chezmoi.os "windows" }}
 .config/alacritty/**
+.config/fuzzel/**
 .config/ghostty/**
 .config/herdr/**
+.config/hypr/**
+.config/mako/**
 .config/starship.toml
+.config/waybar/**
+.local/bin/power-menu
 .local/bin/sioyek
 .local/share/applications
 .local/share/applications/sioyek.desktop

@@ -1,7 +1,9 @@
 * text=auto
+.gitattributes text eol=lf
 .chezmoiignore text eol=lf
 
 *.conf text eol=lf
+*.config text eol=lf
 *.css text eol=lf
 *.ini text eol=lf
 *.json text eol=lf
@@ -12,3 +14,7 @@
 *.sh text eol=lf
 *.toml text eol=lf
 *.tmpl text eol=lf
+
+dot_config/mako/config text eol=lf
+dot_local/bin/* text eol=lf
+dot_zshrc text eol=lf
