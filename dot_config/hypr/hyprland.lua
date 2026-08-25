@@ -20,9 +20,6 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("mako")
     hl.exec_cmd("hypridle")
     hl.exec_cmd("/usr/lib/hyprpolkitagent/hyprpolkitagent")
-    -- Blueman supplies the pairing agent. Waybar owns the visible Bluetooth
-    -- indicator, so the generic tray is intentionally omitted from the bar.
-    hl.exec_cmd("blueman-applet")
 end)
 
 hl.env("XCURSOR_SIZE", "24")
@@ -81,11 +78,9 @@ hl.config({
         key_press_enables_dpms = true,
     },
     input = {
-        kb_layout = "it",
-        kb_variant = "",
-        kb_model = "pc105",
-        kb_options = "terminate:ctrl_alt_bksp",
-        kb_rules = "",
+        -- Italian layout with Caps Lock/Escape swapped and programming-friendly
+        -- Shift layers for à (`) and ù (~).
+        kb_file = os.getenv("HOME") .. "/.config/xkb/keymap.xkb",
         follow_mouse = 1,
         sensitivity = 0,
         touchpad = {
@@ -115,6 +110,7 @@ hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
+hl.bind(mainMod .. " + M", hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + SPACE", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + E", hl.dsp.exit())
@@ -157,6 +153,10 @@ hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true 
 -- Screenshots are written to ~/Pictures/Screenshots.
 hl.bind("Print", hl.dsp.exec_cmd([[sh -c 'mkdir -p "$HOME/Pictures/Screenshots"; file="$HOME/Pictures/Screenshots/$(date +%Y%m%d-%H%M%S).png"; grim -g "$(slurp)" "$file" && notify-send "Screenshot saved" "$file"']]))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd([[sh -c 'mkdir -p "$HOME/Pictures/Screenshots"; file="$HOME/Pictures/Screenshots/$(date +%Y%m%d-%H%M%S).png"; grim "$file" && notify-send "Screenshot saved" "$file"']]))
+
+-- Small global conveniences formerly provided by AutoHotkey/PowerToys.
+hl.bind(mainMod .. " + SHIFT + D", hl.dsp.exec_cmd([[sh -c 'wtype "$(date +%F)"']]))
+hl.bind(mainMod .. " + SHIFT + C", hl.dsp.exec_cmd([[sh -c 'color=$(hyprpicker -f hex) && printf %s "$color" | wl-copy && notify-send "Color copied" "$color"']]))
 
 -- Ignore maximize requests that conflict with tiling semantics.
 hl.window_rule({

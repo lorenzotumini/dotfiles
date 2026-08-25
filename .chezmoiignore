@@ -17,6 +17,7 @@ README.md
 .config/mako/**
 .config/starship.toml
 .config/waybar/**
+.config/xkb/**
 .local/bin/power-menu
 .local/bin/sioyek
 .local/share/applications

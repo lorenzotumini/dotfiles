@@ -1,0 +1,6 @@
+default partial alphanumeric_keys
+xkb_symbols "programmer" {
+    // Preserve the Italian base and AltGr levels, replacing only Shift.
+    key <AC11> { [ agrave, grave,      numbersign, dead_abovering ] };
+    key <BKSL> { [ ugrave, asciitilde, dead_grave,  dead_breve     ] };
+};
