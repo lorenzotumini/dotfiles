@@ -3,7 +3,6 @@ set -u
 
 choice=$(printf '%s\n' \
   'Lock' \
-  'Suspend' \
   'Log out' \
   'Restart' \
   'Shut down' | fuzzel --dmenu --prompt='Power > ')
@@ -11,17 +10,6 @@ choice=$(printf '%s\n' \
 case "$choice" in
   'Lock')
     hyprlock
-    ;;
-  'Suspend')
-    # Give Hyprlock time to acquire the session and render before the NVIDIA
-    # GPU enters S3. This avoids waking into a half-rendered lock surface.
-    loginctl lock-session
-    for _ in {1..20}; do
-      pgrep -x hyprlock >/dev/null && break
-      sleep 0.1
-    done
-    sleep 1
-    systemctl suspend
     ;;
   'Log out')
     loginctl terminate-session "${XDG_SESSION_ID:?Missing XDG session ID}"
