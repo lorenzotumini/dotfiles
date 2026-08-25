@@ -19,6 +19,7 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("waybar")
     hl.exec_cmd("mako")
     hl.exec_cmd("hypridle")
+    hl.exec_cmd("tailscale systray")
     hl.exec_cmd("/usr/lib/hyprpolkitagent/hyprpolkitagent")
 end)
 
@@ -106,14 +107,32 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 1.94, bezier = "almo
 -- Programs and session controls.
 hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + F", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + M", hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + SPACE", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + E", hl.dsp.exit())
+
+-- Show the wallpaper on a dedicated empty workspace, then return to the
+-- workspace that was active. This gives Super+D Windows-like toggle behavior
+-- without minimizing or otherwise changing any windows.
+local workspaceBeforeDesktop = nil
+hl.bind(mainMod .. " + D", function ()
+    local active = hl.get_active_workspace()
+    if not active then
+        return
+    end
+
+    if active.name == "desktop" then
+        hl.dispatch(hl.dsp.focus({ workspace = workspaceBeforeDesktop or 1 }))
+        workspaceBeforeDesktop = nil
+    else
+        workspaceBeforeDesktop = active.id
+        hl.dispatch(hl.dsp.focus({ workspace = "name:desktop" }))
+    end
+end)
 
 -- Focus using either arrows or Vim-style keys.
 local directions = {
@@ -134,7 +153,7 @@ end
 
 -- Scratchpad and mouse-based moving/resizing.
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratchpad"))
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:scratchpad" }))
+hl.bind(mainMod .. " + ALT + S", hl.dsp.window.move({ workspace = "special:scratchpad" }))
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
@@ -152,10 +171,10 @@ hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true 
 
 -- Screenshots are written to ~/Pictures/Screenshots.
 hl.bind("Print", hl.dsp.exec_cmd([[sh -c 'mkdir -p "$HOME/Pictures/Screenshots"; file="$HOME/Pictures/Screenshots/$(date +%Y%m%d-%H%M%S).png"; grim -g "$(slurp)" "$file" && notify-send "Screenshot saved" "$file"']]))
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd([[sh -c 'mkdir -p "$HOME/Pictures/Screenshots"; file="$HOME/Pictures/Screenshots/$(date +%Y%m%d-%H%M%S).png"; grim -g "$(slurp)" "$file" && notify-send "Screenshot saved" "$file"']]))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd([[sh -c 'mkdir -p "$HOME/Pictures/Screenshots"; file="$HOME/Pictures/Screenshots/$(date +%Y%m%d-%H%M%S).png"; grim "$file" && notify-send "Screenshot saved" "$file"']]))
 
 -- Small global conveniences formerly provided by AutoHotkey/PowerToys.
-hl.bind(mainMod .. " + SHIFT + D", hl.dsp.exec_cmd([[sh -c 'wtype "$(date +%F)"']]))
 hl.bind(mainMod .. " + SHIFT + C", hl.dsp.exec_cmd([[sh -c 'color=$(hyprpicker -f hex) && printf %s "$color" | wl-copy && notify-send "Color copied" "$color"']]))
 
 -- Ignore maximize requests that conflict with tiling semantics.

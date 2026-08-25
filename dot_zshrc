@@ -90,6 +90,24 @@ alias cx='codex'
 alias ..='cd ..'
 alias ...='cd ../..'
 
+# Compact views of what is running now and what is enabled at boot/login.
+services() {
+	print -P '\n%F{cyan}User-session services%f'
+	command systemctl --user list-units --type=service --state=running --no-pager
+	print -P '\n%F{cyan}System services%f'
+	command systemctl list-units --type=service --state=running --no-pager
+}
+
+startup() {
+	print -P '\n%F{cyan}Enabled user-session services%f'
+	command systemctl --user list-unit-files --state=enabled --no-pager
+	print -P '\n%F{cyan}Enabled system services%f'
+	command systemctl list-unit-files --state=enabled --no-pager
+	print -P '\n%F{cyan}Desktop autostart files%f'
+	command find "$HOME/.config/autostart" /etc/xdg/autostart \
+		-maxdepth 1 -type f -print 2>/dev/null | command sort
+}
+
 gitree() {
 	git log --graph --oneline --all --decorate --color=always "$@"
 }

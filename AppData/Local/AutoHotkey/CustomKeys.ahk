@@ -14,9 +14,3 @@
 #q::WinClose("A")
 #m::WinMaximize("A")
 #+m::WinRestore("A")
-
-; Type ;;date to insert an ISO-formatted date.
-::;;date::
-{
-    SendText(FormatTime(, "yyyy-MM-dd"))
-}
