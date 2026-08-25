@@ -3,7 +3,7 @@
     "position": "top",
     "height": 32,
     "spacing": 8,
-    "modules-left": ["hyprland/workspaces", "hyprland/window"],
+    "modules-left": ["hyprland/workspaces", "hyprland/workspaces#scratchpad", "hyprland/window"],
     "modules-center": ["clock"],
     "modules-right": ["tray", "idle_inhibitor", "bluetooth", "pulseaudio", "network", "cpu", "memory", "custom/power"],
 
@@ -12,6 +12,22 @@
         "sort-by-number": true,
         "active-only": false,
         "all-outputs": false
+    },
+    "hyprland/workspaces#scratchpad": {
+        "format": "󰚌 {windows}",
+        "format-window-separator": " ",
+        "window-rewrite-default": "•",
+        "window-rewrite": {
+            "class<Spotify>": "󰓇",
+            "class<firefox>": "󰈹",
+            "class<thunderbird>": "󰇮",
+            "class<org.gnome.Nautilus>": "󰉋",
+            "class<com.mitchellh.ghostty>": ""
+        },
+        "show-special": true,
+        "special-visible-only": false,
+        "all-outputs": false,
+        "ignore-workspaces": ["^[0-9]+$", "^desktop$"]
     },
     "hyprland/window": {
         "format": "{title}",

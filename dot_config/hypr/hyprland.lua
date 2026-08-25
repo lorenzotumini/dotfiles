@@ -154,7 +154,19 @@ end
 
 -- Scratchpad and mouse-based moving/resizing.
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratchpad"))
-hl.bind(mainMod .. " + ALT + S", hl.dsp.window.move({ workspace = "special:scratchpad" }))
+hl.bind(mainMod .. " + ALT + S", function ()
+    local window = hl.get_active_window()
+    local normalWorkspace = hl.get_active_workspace()
+    if not window or not window.workspace or not normalWorkspace then
+        return
+    end
+
+    if window.workspace.name == "special:scratchpad" then
+        hl.dispatch(hl.dsp.window.move({ workspace = normalWorkspace.id }))
+    else
+        hl.dispatch(hl.dsp.window.move({ workspace = "special:scratchpad" }))
+    end
+end)
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })

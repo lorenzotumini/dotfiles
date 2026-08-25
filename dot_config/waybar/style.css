@@ -34,6 +34,19 @@ window#waybar {
     border-radius: 6px;
 }
 
+/* Special-workspace buttons represent windows parked in the scratchpad. */
+#workspaces button.special {
+    color: #f9e2af;
+    background: #313244;
+    border-radius: 6px;
+    margin-left: 4px;
+}
+
+#workspaces button.special.active {
+    color: #11111b;
+    background: #f9e2af;
+}
+
 #window {
     color: #a6adc8;
     margin-left: 12px;
