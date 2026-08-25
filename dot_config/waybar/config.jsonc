@@ -14,7 +14,7 @@
         "all-outputs": false
     },
     "hyprland/workspaces#scratchpad": {
-        "format": "󰚌 {windows}",
+        "format": "scratch {windows}",
         "format-window-separator": " ",
         "window-rewrite-default": "•",
         "window-rewrite": {
