@@ -112,7 +112,8 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + M", hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + SPACE", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("hyprlock"))
+hl.bind("ALT + F4", hl.dsp.window.close())
+hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + E", hl.dsp.exit())
 
 -- Show the wallpaper on a dedicated empty workspace, then return to the
