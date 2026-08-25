@@ -13,6 +13,14 @@ case "$choice" in
     hyprlock
     ;;
   'Suspend')
+    # Give Hyprlock time to acquire the session and render before the NVIDIA
+    # GPU enters S3. This avoids waking into a half-rendered lock surface.
+    loginctl lock-session
+    for _ in {1..20}; do
+      pgrep -x hyprlock >/dev/null && break
+      sleep 0.1
+    done
+    sleep 1
     systemctl suspend
     ;;
   'Log out')

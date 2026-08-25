@@ -121,25 +121,6 @@ hl.bind("ALT + F4", hl.dsp.window.close())
 hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + SHIFT + E", hl.dsp.exit())
 
--- Show the wallpaper on a dedicated empty workspace, then return to the
--- workspace that was active. This gives Super+D Windows-like toggle behavior
--- without minimizing or otherwise changing any windows.
-local workspaceBeforeDesktop = nil
-hl.bind(mainMod .. " + D", function ()
-    local active = hl.get_active_workspace()
-    if not active then
-        return
-    end
-
-    if active.name == "desktop" then
-        hl.dispatch(hl.dsp.focus({ workspace = workspaceBeforeDesktop or 1 }))
-        workspaceBeforeDesktop = nil
-    else
-        workspaceBeforeDesktop = active.id
-        hl.dispatch(hl.dsp.focus({ workspace = "name:desktop" }))
-    end
-end)
-
 -- Focus using either arrows or Vim-style keys.
 local directions = {
     left = "left", right = "right", up = "up", down = "down",
