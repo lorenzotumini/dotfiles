@@ -103,6 +103,11 @@ window#waybar {
     color: #a6e3a1;
 }
 
+#network.disconnected,
+#network.disabled {
+    color: #6c7086;
+}
+
 #cpu {
     color: #f9e2af;
 }

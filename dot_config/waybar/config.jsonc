@@ -69,10 +69,15 @@
         "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
     },
     "network": {
+        "interface": "wlan0",
+        "rfkill": true,
         "format-wifi": "󰤨 {essid}",
         "format-ethernet": "󰈀 {ipaddr}",
-        "format-disconnected": "󰤭 offline",
-        "tooltip-format": "{ifname}: {ipaddr}/{cidr}\nGateway: {gwaddr}\nLeft click: manage connections\nRight click: toggle Wi-Fi",
+        "format-disconnected": "󰤭 disconnected",
+        "format-disabled": "󰤭",
+        "tooltip-format-wifi": "{ifname}: {ipaddr}/{cidr}\nGateway: {gwaddr}\nLeft click: manage connections\nRight click: toggle Wi-Fi",
+        "tooltip-format-disconnected": "Wi-Fi disconnected\nLeft click: manage connections\nRight click: toggle Wi-Fi",
+        "tooltip-format-disabled": "Wi-Fi disabled\nLeft click: manage connections\nRight click: enable Wi-Fi",
         "on-click": "networkmanager_dmenu",
         "on-click-right": "$HOME/.config/waybar/scripts/toggle-wifi"
     },
