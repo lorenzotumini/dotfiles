@@ -112,10 +112,10 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 1.94, bezier = "almo
 -- Programs and session controls.
 hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + F", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
-hl.bind(mainMod .. " + M", hl.dsp.window.fullscreen())
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + SPACE", hl.dsp.window.float({ action = "toggle" }))
 hl.bind("ALT + F4", hl.dsp.window.close())
 hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("hyprlock"))
