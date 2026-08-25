@@ -1,0 +1,25 @@
+{{- if eq .chezmoi.os "windows" }}
+# This automation runs under PowerShell 7 without loading interactive profiles.
+$ErrorActionPreference = 'Stop'
+
+$canonicalDirectory = Join-Path $HOME '.config\nvim'
+$nativeDirectory = Join-Path $env:LOCALAPPDATA 'nvim'
+$canonicalFullPath = [System.IO.Path]::GetFullPath($canonicalDirectory).TrimEnd('\')
+
+New-Item -ItemType Directory -Path $canonicalDirectory -Force | Out-Null
+
+if (-not (Test-Path -LiteralPath $nativeDirectory)) {
+	New-Item -ItemType Junction -Path $nativeDirectory -Target $canonicalDirectory | Out-Null
+	return
+}
+
+$nativeItem = Get-Item -LiteralPath $nativeDirectory -Force
+if (-not ($nativeItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+	throw "Cannot create the Neovim junction because '$nativeDirectory' is a real directory. Move any data you need into '$canonicalDirectory', remove the old directory, and run chezmoi apply again."
+}
+
+$junctionTarget = [System.IO.Path]::GetFullPath([string]$nativeItem.Target).TrimEnd('\')
+if ($junctionTarget -ne $canonicalFullPath) {
+	throw "The existing Neovim junction targets '$junctionTarget', not '$canonicalFullPath'."
+}
+{{- end -}}

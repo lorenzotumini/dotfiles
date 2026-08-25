@@ -1,0 +1,15 @@
+{{- if eq .chezmoi.os "windows" }}
+# prefs hash: {{ include "dot_config/sioyek/prefs_user.config" | sha256sum }}
+# keys hash: {{ include "dot_config/sioyek/keys_user.config" | sha256sum }}
+$ErrorActionPreference = 'Stop'
+
+$sourceDirectory = Join-Path $HOME '.config\sioyek'
+$destinationDirectory = Join-Path $env:ProgramData 'sioyek'
+New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+
+foreach ($name in @('prefs_user.config', 'keys_user.config')) {
+	$source = Join-Path $sourceDirectory $name
+	$destination = Join-Path $destinationDirectory $name
+	Copy-Item -LiteralPath $source -Destination $destination -Force
+}
+{{- end }}

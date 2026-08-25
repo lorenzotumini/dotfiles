@@ -1,6 +1,5 @@
 # Ignore generated or volatile files
 README.md
-AppData/Local/nvim/lazy-lock.json
 .config/nvim/lazy-lock.json
 .glzr/glazewm/errors.log
 .glzr/zebar/errors.log
@@ -8,10 +7,16 @@ AppData/Local/nvim/lazy-lock.json
 
 # OS-specific config trees
 {{ if eq .chezmoi.os "windows" }}
-.config/nvim/**
+.config/alacritty/**
+.config/ghostty/**
+.config/herdr/**
+.config/starship.toml
+.local/bin/sioyek
+.local/share/applications
+.local/share/applications/sioyek.desktop
+.zshrc
 {{ else }}
 AppData/**
 Documents/PowerShell/**
 .glzr/**
-.wezterm.lua
 {{ end }}

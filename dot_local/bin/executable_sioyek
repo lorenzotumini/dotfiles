@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Sioyek's native Qt Wayland/OpenGL path does not create a usable context on
+# this NVIDIA workstation. Keep the compatibility fallback and its fractional
+# scaling local to Sioyek; Hyprland leaves XWayland pixels unscaled.
+exec env QT_QPA_PLATFORM=xcb QT_SCALE_FACTOR=1.25 /usr/bin/sioyek "$@"

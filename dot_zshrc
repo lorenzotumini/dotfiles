@@ -1,0 +1,127 @@
+# Keep this file intentionally small: Arch packages provide the interactive
+# features, while chezmoi owns only their configuration.
+
+# -------- ENVIRONMENT --------
+typeset -U path PATH
+path=("$HOME/.local/bin" $path)
+
+export EDITOR=nvim
+export VISUAL=nvim
+export BAT_THEME=ansi
+export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --exclude .git'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse'
+export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=plain --line-range=:200 {}'"
+export FZF_CTRL_R_OPTS="--preview 'print -r -- {} | bat --color=always --language=sh'"
+
+# -------- PRIVATE, LOCAL HISTORY --------
+# Start sensitive commands with a space so they are neither saved nor offered
+# later as autosuggestions. The history file itself is never tracked by chezmoi.
+zsh_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/zsh"
+if [[ ! -d "$zsh_state_dir" ]]; then
+	mkdir -p -m 700 -- "$zsh_state_dir"
+fi
+
+HISTFILE="$zsh_state_dir/history"
+HISTSIZE=50000
+SAVEHIST=10000
+[[ -e "$HISTFILE" ]] || : >| "$HISTFILE"
+chmod 600 -- "$HISTFILE"
+
+setopt APPEND_HISTORY
+setopt INC_APPEND_HISTORY
+setopt EXTENDED_HISTORY
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_FIND_NO_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_SAVE_NO_DUPS
+unsetopt SHARE_HISTORY
+
+# -------- COMPLETION AND EDITING --------
+zsh_cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+mkdir -p -m 700 -- "$zsh_cache_dir"
+
+autoload -Uz compinit
+compinit -d "$zsh_cache_dir/zcompdump"
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+
+bindkey -v
+KEYTIMEOUT=1
+bindkey '^P' up-history
+bindkey '^N' down-history
+bindkey '^R' history-incremental-search-backward
+setopt INTERACTIVE_COMMENTS
+
+if [[ -o zle && -t 0 && -t 1 ]]; then
+	if [[ -r /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
+		ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
+		source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+	fi
+
+	if [[ -r /usr/share/fzf/key-bindings.zsh ]]; then
+		source /usr/share/fzf/key-bindings.zsh
+	fi
+	if [[ -r /usr/share/fzf/completion.zsh ]]; then
+		source /usr/share/fzf/completion.zsh
+	fi
+fi
+
+# -------- TOOLS, ALIASES, AND SMALL HELPERS --------
+(( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
+(( $+commands[direnv] )) && eval "$(direnv hook zsh)"
+(( $+commands[herdr] )) && source <(herdr completion zsh)
+
+if (( $+commands[eza] )); then
+	alias ls='eza --group-directories-first --icons=auto'
+	alias ll='eza --long --git --icons=auto --group-directories-first'
+else
+	alias ls='ls --color=auto'
+	alias ll='ls -al'
+fi
+
+(( $+commands[bat] )) && alias cat='bat'
+(( $+commands[fd] )) && alias find='fd'
+(( $+commands[rg] )) && alias grep='rg'
+alias v='nvim'
+alias cx='codex'
+alias ..='cd ..'
+alias ...='cd ../..'
+
+gitree() {
+	git log --graph --oneline --all --decorate --color=always "$@"
+}
+
+fedit() {
+	local selected
+	selected="$(fd --type f | fzf --preview 'bat --style=numbers --color=always {}')" || return
+	[[ -n "$selected" ]] && nvim -- "$selected"
+}
+
+# Usage: secret-env OPENAI_API_KEY
+# The value is read without echo and the history only records the variable name.
+secret-env() {
+	if (( $# != 1 )) || [[ ! "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+		print -u2 'usage: secret-env VARIABLE_NAME'
+		return 2
+	fi
+
+	local secret_value
+	read -rs "secret_value?$1: "
+	print
+	export "$1=$secret_value"
+	unset secret_value
+}
+
+if [[ -t 1 && "$TERM" != dumb ]] && (( $+commands[starship] )); then
+	eval "$(starship init zsh)"
+fi
+
+# zsh-syntax-highlighting must be sourced after widgets and prompt integrations.
+if [[ -o zle && -t 0 && -t 1 && -r /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
+	source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
+
+unset zsh_state_dir zsh_cache_dir

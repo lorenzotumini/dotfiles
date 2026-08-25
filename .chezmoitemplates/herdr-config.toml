@@ -1,0 +1,13 @@
+# Keep only intentional overrides; Herdr supplies the remaining defaults.
+onboarding = false
+
+[theme]
+name = "kanagawa"
+auto_switch = false
+
+[terminal]
+default_shell = "{{ if eq .chezmoi.os "windows" }}pwsh{{ else }}zsh{{ end }}"
+new_cwd = "follow"
+
+[experimental]
+pane_history = false

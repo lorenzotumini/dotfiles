@@ -1,5 +1,6 @@
 local wezterm = require("wezterm")
 local act = wezterm.action
+local is_windows = wezterm.target_triple:find("windows") ~= nil
 
 local config = wezterm.config_builder()
 
@@ -21,7 +22,9 @@ config.cell_width = 1.0
 config.line_height = 1.0
 
 config.window_background_opacity = 1 -- 0.90
-config.win32_system_backdrop = "Acrylic" -- Mica, Tabbed
+if is_windows then
+	config.win32_system_backdrop = "Acrylic" -- Mica, Tabbed
+end
 -- config.text_background_opacity = 0.85
 
 config.window_padding = {
@@ -88,7 +91,11 @@ config.color_schemes = {
 config.color_scheme = "Gruber (base16)"
 
 -- Shell / Program Defaults
-config.default_prog = { "pwsh.exe", "-NoLogo" }
+if is_windows then
+	config.default_prog = { "pwsh.exe", "-NoLogo" }
+else
+	config.default_prog = { "zsh", "-l" }
+end
 
 -- Key Bindings
 config.keys = {
@@ -132,20 +139,22 @@ config.keys = {
 }
 
 -- Window Behavior
-wezterm.on("gui-startup", function(cmd)
-	local _, _, window = wezterm.mux.spawn_window(cmd or {})
-	local gui = window:gui_window()
+if is_windows then
+	wezterm.on("gui-startup", function(cmd)
+		local _, _, window = wezterm.mux.spawn_window(cmd or {})
+		local gui = window:gui_window()
 
-	-- Optional: comment out this line if you don’t want the window maximized
-	-- gui:maximize()
+		-- Optional: comment out this line if you don’t want the window maximized
+		-- gui:maximize()
 
-	-- Center the window manually (only works if not maximized)
-	local screen = wezterm.gui.screens().active
-	local dimensions = gui:get_dimensions()
+		-- Center the window manually (only works if not maximized)
+		local screen = wezterm.gui.screens().active
+		local dimensions = gui:get_dimensions()
 
-	local x = (screen.width - dimensions.pixel_width) / 2
-	local y = (screen.height - dimensions.pixel_height) / 2 - 30
-	gui:set_position(x, y)
-end)
+		local x = (screen.width - dimensions.pixel_width) / 2
+		local y = (screen.height - dimensions.pixel_height) / 2 - 30
+		gui:set_position(x, y)
+	end)
+end
 
 return config

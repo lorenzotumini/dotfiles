@@ -25,6 +25,12 @@ function OnViModeChange($mode) {
 Set-PSReadLineOption -ViModeIndicator Script -ViModeChangeHandler $Function:OnViModeChange
 Set-PSReadLineOption -HistoryNoDuplicates
 Set-PSReadLineOption -MaximumHistoryCount 10000
+# Prefix a sensitive command with a space to keep it out of PSReadLine history.
+# This also prevents inline history predictions from resurfacing that command.
+Set-PSReadLineOption -AddToHistoryHandler {
+	param([string]$line)
+	return -not [string]::IsNullOrEmpty($line) -and -not [char]::IsWhiteSpace($line[0])
+}
 Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
 
 if ($Host.UI.SupportsVirtualTerminal) {
@@ -77,7 +83,6 @@ __step "  Modules: registration"
 
 # deferred to PowerShell's idle event
 Register-EngineEvent -SourceIdentifier PowerShell.OnIdle -MaxTriggerCount 1 -Action {
-	Import-Module Terminal-Icons -ErrorAction SilentlyContinue
 	Import-Module Microsoft.WinGet.CommandNotFound -ErrorAction SilentlyContinue
 	Import-Module PSFzf -ErrorAction SilentlyContinue
 	if (Get-Module PSFzf) {
@@ -100,11 +105,11 @@ Set-Alias cat bat
 Set-Alias find fd
 Set-Alias grep rg
 Set-Alias v nvim
-Set-Alias wc cloc 
+Set-Alias wc cloc
 Set-Alias fastcp robocopy
 # https://github.com/openai/codex/issues/17112
-# set sanbox settings in .codex/config.toml 
-Set-Alias cx codex 
+# set sanbox settings in .codex/config.toml
+Set-Alias cx codex
 
 function .. { Set-Location .. }
 function ... { Set-Location ../.. }
@@ -161,7 +166,7 @@ function start-claude-local {
 function ccc {
     $cwd = (Get-Location).Path
     $configDir = Join-Path $HOME ".config/free-claude-code"
-    
+
     if ($env:WT_SESSION) {
         wt -w 0 new-tab -d "$configDir" -p "PowerShell" free-claude-code
         wt -w 0 new-tab -d "$cwd" -p "PowerShell" pwsh -NoLogo -NoExit -Command "start-claude-local"
@@ -184,12 +189,12 @@ function lines {
 
         [string]$path = "."
     )
-    
+
     if (-not (Test-Path $path)) {
         Write-Error "The path '$path' does not exist."
         return
     }
-    
+
     $fullPath = (Resolve-Path $path).Path
 
     if (Test-Path (Join-Path $fullPath ".git")) {
@@ -202,13 +207,13 @@ function lines {
         $extset = $ext | ForEach-Object { if ($_ -notmatch '^\.') { ".$_" } else { $_ } }
         $files = $files | Where-Object { $extset -contains [IO.Path]::GetExtension($_) }
     }
-    
+
     if (-not $files) { Write-Host "no matching files."; return }
-    
+
     $results = $files | Where-Object { Test-Path $_ } | ForEach-Object {
         [PSCustomObject]@{ lines = @(Get-Content $_).Count; file = $_ }
     } | Sort-Object lines -Descending
-    
+
     $results | Format-Table -AutoSize
     "`ntotal lines: $(($results | Measure-Object lines -Sum).Sum)"
 }
