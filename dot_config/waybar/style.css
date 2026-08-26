@@ -1,133 +1,133 @@
+/* Neutral structured style: macOS restraint with explicit status cells. */
 * {
     border: none;
     border-radius: 0;
-    font-family: "JetBrainsMono Nerd Font";
+    font-family: "Inter", "Helvetica Neue", "Segoe UI", "JetBrainsMono Nerd Font", sans-serif;
     font-size: 13px;
     min-height: 0;
 }
 
 window#waybar {
-    background: rgba(17, 17, 27, 0.96);
-    color: #cdd6f4;
-    border-bottom: 1px solid #313244;
+    background: rgba(29, 29, 30, 1);
+    color: #ffffff;
+    /* border-bottom: 1px solid rgba(255, 255, 255, 0.10); */
 }
 
+/* Workspaces remain visually quiet, with a clear active state. */
 #workspaces {
-    margin-left: 10px;
+    margin: 0 4px;
 }
-
 #workspaces button {
-    padding: 0 5px;
-    margin: 0 1px;
-    color: #6c7086;
+    padding: 0 8px;
+    margin: 0;
+    min-width: 24px;
+    color: rgba(255, 255, 255, 0.42);
     background: transparent;
-    box-shadow: inset 0 -2px transparent;
+    box-shadow: none;
 }
-
 #workspaces button.active {
-    color: #89b4fa;
-    background: transparent;
-    box-shadow: inset 0 -2px #89b4fa;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.16);
 }
-
 #workspaces button.urgent {
-    color: #f38ba8;
-    background: transparent;
-    box-shadow: inset 0 -2px #f38ba8;
+    color: #ff9f0a;
 }
-
 #workspaces button:hover {
-    color: #cdd6f4;
-    background: transparent;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.10);
 }
-
-/* Special-workspace buttons represent windows parked in the scratchpad. */
 #workspaces button.special {
-    color: #7f849c;
-    background: transparent;
+    color: rgba(255, 255, 255, 0.28);
 }
-
 #workspaces button.special.active {
-    color: #f9e2af;
-    background: transparent;
-    box-shadow: inset 0 -2px #f9e2af;
+    color: #ffd60a;
+    background: rgba(255, 214, 10, 0.14);
 }
 
 #window {
-    color: #a6adc8;
-    margin-left: 12px;
+    color: rgba(255, 255, 255, 0.68);
+    margin-left: 10px;
 }
 
 #clock {
-    color: #cba6f7;
-    font-weight: bold;
+    min-width: 150px;
+    padding: 0 12px;
+    color: #ffffff;
+    font-weight: 600;
 }
 
+/* Every status item is a stable cell. The widths are large enough for 100%. */
 #custom-idle-inhibitor,
 #bluetooth,
-#tray,
 #pulseaudio,
 #network,
+#custom-wifi,
 #cpu,
 #memory,
 #custom-gpu,
+#group-tray-expander,
+#custom-expand-icon,
+#tray,
 #custom-power {
-    padding: 0 7px;
+    padding: 0 10px;
+    border-left: 1px solid rgba(255, 255, 255, 0.10);
+}
+#custom-idle-inhibitor,
+#bluetooth,
+#pulseaudio,
+#network,
+#custom-wifi {
+    min-width: 22px;
+}
+#cpu,
+#memory,
+#custom-gpu {
+    min-width: 62px;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+}
+#custom-power {
+    min-width: 22px;
+    margin-right: 8px;
 }
 
 #custom-idle-inhibitor:hover,
 #bluetooth:hover,
 #pulseaudio:hover,
 #network:hover,
+#custom-wifi:hover,
 #cpu:hover,
 #memory:hover,
 #custom-gpu:hover,
+#custom-expand-icon:hover,
+#tray:hover,
 #custom-power:hover {
-    background: #313244;
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.10);
 }
-
 #custom-idle-inhibitor.activated {
-    color: #f9e2af;
+    color: rgba(255, 255, 255, 0.90);
 }
-
-#bluetooth {
-    color: #89dceb;
-}
-
-#pulseaudio {
-    color: #89b4fa;
-}
-
-#network {
-    color: #a6e3a1;
-}
-
 #network.disconnected,
 #network.disabled {
-    color: #6c7086;
+    color: rgba(255, 255, 255, 0.38);
 }
-
-#cpu {
-    color: #f9e2af;
+#custom-wifi.disabled,
+#custom-wifi.unavailable {
+    color: rgba(255, 255, 255, 0.38);
 }
-
-#memory {
-    color: #fab387;
+#custom-wifi.connecting {
+    color: rgba(255, 255, 255, 0.64);
 }
-
-#custom-gpu {
-    color: #cba6f7;
-}
-
 #custom-power {
-    color: #f38ba8;
-    margin-right: 8px;
+    color: rgba(255, 255, 255, 0.82);
+}
+#custom-power:hover {
+    background: #ff453a;
+    color: #ffffff;
 }
 
 tooltip {
-    background: #1e1e2e;
-    color: #cdd6f4;
-    border: 1px solid #89b4fa;
-    border-radius: 6px;
+    background: rgba(40, 40, 42, 1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
 }

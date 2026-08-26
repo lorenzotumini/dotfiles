@@ -8,8 +8,10 @@ if vim.g.neovide then
 	vim.g.neovide_padding_right = 0
 	vim.g.neovide_padding_left = 0
 
-	vim.g.neovide_title_background_color =
-		string.format("%x", vim.api.nvim_get_hl(0, { id = vim.api.nvim_get_hl_id_by_name("Normal") }).bg)
+	local normal = vim.api.nvim_get_hl(0, { name = "Normal" })
+	if normal.bg then
+		vim.g.neovide_title_background_color = string.format("%x", normal.bg)
+	end
 
 	vim.g.neovide_hide_mouse_when_typing = true
 	vim.g.neovide_fullscreen = false

@@ -1,14 +1,21 @@
-// Waybar — neutral structured layout
-// macOS-inspired palette and icon-first status area, with Omarchy-style
-// module boundaries and a collapsible tray.
+// Waybar — macOS menu bar inspired layout
+// Signature move: nothing is centered (macOS never centers menu bar items),
+// workspaces become small Mission-Control-style dots next to the logo, and
+// the clock joins the status icons on the far right.
 {
     "layer": "top",
     "position": "top",
-    "height": 30,
+    "height": 28,
     "spacing": 0,
-    "modules-left": ["hyprland/workspaces", "hyprland/workspaces#scratchpad"],
-    "modules-center": ["clock"],
-    "modules-right": ["group/tray-expander", "custom/idle-inhibitor", "bluetooth", "pulseaudio", "custom/wifi", "cpu", "memory", "custom/gpu", "custom/power"],
+    "modules-left": ["hyprland/workspaces", "hyprland/workspaces#scratchpad", "hyprland/window"],
+    "modules-center": [],
+    "modules-right": ["custom/idle-inhibitor", "bluetooth", "custom/wifi", "pulseaudio", "cpu", "memory", "custom/gpu", "tray", "clock", "custom/power"],
+
+    "custom/apple": {
+        "format": "\uf179",
+        "tooltip": false,
+        "on-click": "$HOME/.local/bin/power-menu"
+    },
 
     "hyprland/workspaces": {
         "format": "{name}",
@@ -25,15 +32,20 @@
     },
     "hyprland/window": {
         "format": "{title}",
-        "max-length": 60,
+        "max-length": 50,
         "separate-outputs": true
     },
 
     "clock": {
         "interval": 1,
-        // "format": "{:%a %d %b  %H:%M}",
-        "format": "{:%a %d  %H:%M}",
+        "format": "{:%a %d %b  %H:%M}",
         "tooltip-format": "<big>{:%B %Y}</big>\n<tt><small>{calendar}</small></tt>"
+    },
+
+    "tray": {
+        "icon-size": 15,
+        "spacing": 10,
+        "show-passive-items": true
     },
 
     "custom/idle-inhibitor": {
@@ -107,25 +119,6 @@
         "return-type": "json",
         "interval": 2,
         "on-click": "ghostty -e btop --config $HOME/.config/btop/waybar.conf --preset 3"
-    },
-
-    "group/tray-expander": {
-        "orientation": "horizontal",
-        "drawer": {
-            "transition-duration": 300,
-            "children-class": "tray-drawer-item",
-            "transition-left-to-right": false
-        },
-        "modules": ["custom/expand-icon", "tray"]
-    },
-    "custom/expand-icon": {
-        "format": "󰅁",
-        "tooltip": false
-    },
-    "tray": {
-        "icon-size": 16,
-        "spacing": 6,
-        "show-passive-items": true
     },
     "custom/power": {
         "format": "󰐥",

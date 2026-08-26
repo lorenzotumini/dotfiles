@@ -1,14 +1,30 @@
-// Waybar — neutral structured layout
-// macOS-inspired palette and icon-first status area, with Omarchy-style
-// module boundaries and a collapsible tray.
+// Waybar — Windows 11 (Fluent) inspired layout
+// Signature move: the bar drops to the BOTTOM of the screen and the
+// workspace row sits dead-center, matching Windows 11's centered taskbar.
+// Set "position" back to "top" below if you'd rather keep the aesthetic
+// without moving the bar.
 {
     "layer": "top",
-    "position": "top",
-    "height": 30,
-    "spacing": 0,
-    "modules-left": ["hyprland/workspaces", "hyprland/workspaces#scratchpad"],
-    "modules-center": ["clock"],
-    "modules-right": ["group/tray-expander", "custom/idle-inhibitor", "bluetooth", "pulseaudio", "custom/wifi", "cpu", "memory", "custom/gpu", "custom/power"],
+    "position": "bottom",
+    "height": 44,
+    "spacing": 2,
+    "modules-left": ["custom/power"],
+    "modules-center": ["hyprland/workspaces", "hyprland/workspaces#scratchpad", "hyprland/window"],
+    "modules-right": ["tray", "custom/idle-inhibitor", "bluetooth", "pulseaudio", "custom/wifi", "cpu", "memory", "custom/gpu", "clock"],
+
+    // "custom/start": {
+    //     "format": "\uf17a",
+    //     "tooltip": true,
+    //     "tooltip-format": "Applications",
+    //     "on-click": "$HOME/.local/bin/power-menu"
+    // },
+    "custom/power": {
+        "format": "󰐥",
+        "tooltip": true,
+        "tooltip-format": "Power and session",
+        "on-click": "$HOME/.local/bin/power-menu"
+    },
+
 
     "hyprland/workspaces": {
         "format": "{name}",
@@ -25,15 +41,20 @@
     },
     "hyprland/window": {
         "format": "{title}",
-        "max-length": 60,
+        "max-length": 40,
         "separate-outputs": true
     },
 
     "clock": {
         "interval": 1,
-        // "format": "{:%a %d %b  %H:%M}",
-        "format": "{:%a %d  %H:%M}",
+        "format": "{0:%H:%M}\n<span size='small' alpha='70%'>{0:%d/%m/%Y}</span>",
         "tooltip-format": "<big>{:%B %Y}</big>\n<tt><small>{calendar}</small></tt>"
+    },
+
+    "tray": {
+        "icon-size": 16,
+        "spacing": 10,
+        "show-passive-items": true
     },
 
     "custom/idle-inhibitor": {
@@ -47,7 +68,7 @@
         "format-disabled": "󰂲",
         "format-off": "󰂲",
         "format-on": "󰂯",
-        "format-connected": "󰂱",
+        "format-connected": "󰂱 {num_connections}",
         "format-no-controller": "",
         "tooltip-format": "Bluetooth: {status}\nLeft click: manage devices\nRight click: toggle power",
         "tooltip-format-connected": "Bluetooth: {status}\n{device_enumerate}\nLeft click: manage devices\nRight click: toggle power",
@@ -56,7 +77,7 @@
         "on-click-right": "$HOME/.config/waybar/scripts/toggle-bluetooth"
     },
     "pulseaudio": {
-        "format": "{icon}",
+        "format": "{icon} {volume}%",
         "format-muted": "󰝟",
         "format-icons": {
             "headphone": "󰋋",
@@ -107,30 +128,5 @@
         "return-type": "json",
         "interval": 2,
         "on-click": "ghostty -e btop --config $HOME/.config/btop/waybar.conf --preset 3"
-    },
-
-    "group/tray-expander": {
-        "orientation": "horizontal",
-        "drawer": {
-            "transition-duration": 300,
-            "children-class": "tray-drawer-item",
-            "transition-left-to-right": false
-        },
-        "modules": ["custom/expand-icon", "tray"]
-    },
-    "custom/expand-icon": {
-        "format": "󰅁",
-        "tooltip": false
-    },
-    "tray": {
-        "icon-size": 16,
-        "spacing": 6,
-        "show-passive-items": true
-    },
-    "custom/power": {
-        "format": "󰐥",
-        "tooltip": true,
-        "tooltip-format": "Power and session",
-        "on-click": "$HOME/.local/bin/power-menu"
     }
 }

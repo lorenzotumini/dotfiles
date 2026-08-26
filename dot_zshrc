@@ -143,3 +143,10 @@ if [[ -o zle && -t 0 && -t 1 && -r /usr/share/zsh/plugins/zsh-syntax-highlightin
 fi
 
 unset zsh_state_dir zsh_cache_dir
+
+# >>> Codex installer >>>
+export PATH="/home/lorenzo/.local/bin:$PATH"
+# <<< Codex installer <<<
+
+# Pi
+export PATH="/home/lorenzo/.local/share/pi-node/node-v22.23.2-linux-x64/bin:$PATH"

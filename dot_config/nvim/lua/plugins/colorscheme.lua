@@ -3,10 +3,7 @@ return {
 		"rebelot/kanagawa.nvim",
 		priority = 1000,
 		config = function()
-			local themes = require("themes")
-			themes.load_last_theme() -- can pass a fallback
-			themes.setup_autocmd()
-			themes.setup_usercmd()
+			require("themes").setup({ default = "kanagawa-wave" })
 		end,
 	},
 

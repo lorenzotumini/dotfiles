@@ -1,0 +1,28 @@
+#!/bin/sh
+
+radio=$(nmcli radio wifi 2>/dev/null) || radio=unknown
+
+case $radio in
+    enabled)
+        state=$(nmcli -t -f DEVICE,TYPE,STATE device status 2>/dev/null |
+            awk -F: '$2 == "wifi" { print $3; exit }')
+
+        case $state in
+            connected)
+                printf '%s\n' '{"text":"󰤨","tooltip":"Wi-Fi connected\nLeft click: manage connections\nRight click: disable Wi-Fi","class":"connected"}'
+                ;;
+            connecting*)
+                printf '%s\n' '{"text":"󰤟","tooltip":"Wi-Fi enabled, connecting…\nLeft click: manage connections\nRight click: disable Wi-Fi","class":"connecting"}'
+                ;;
+            *)
+                printf '%s\n' '{"text":"󰤟","tooltip":"Wi-Fi enabled, waiting for a connection\nLeft click: manage connections\nRight click: disable Wi-Fi","class":"connecting"}'
+                ;;
+        esac
+        ;;
+    disabled)
+        printf '%s\n' '{"text":"󰤭","tooltip":"Wi-Fi disabled\nLeft click: manage connections\nRight click: enable Wi-Fi","class":"disabled"}'
+        ;;
+    *)
+        printf '%s\n' '{"text":"󰤭","tooltip":"Wi-Fi state unavailable\nLeft click: manage connections\nRight click: retry the toggle","class":"unavailable"}'
+        ;;
+esac
