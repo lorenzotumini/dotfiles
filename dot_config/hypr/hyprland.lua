@@ -49,7 +49,8 @@ hl.config({
         gaps_out = 15,
         border_size = 2,
         col = {
-            active_border = { colors = { "rgba(89b4faff)", "rgba(cba6f7ff)" }, angle = 45 },
+            -- active_border = { colors = { "rgba(89b4faff)", "rgba(cba6f7ff)" }, angle = 45 },
+            active_border = { colors = { "rgba(3f3664ff)" }, angle = 45 },
             inactive_border = "rgba(585b70aa)",
         },
         resize_on_border = true,
@@ -181,6 +182,36 @@ hl.window_rule({
     name = "suppress-maximize-events",
     match = { class = ".*" },
     suppress_event = "maximize",
+})
+
+-- MEGAsync currently collapses this XWayland dialog to a one-pixel window on
+-- Hyprland. Target only the broken modal so its tray popups retain their own
+-- application-controlled size and position.
+hl.window_rule({
+    name = "mega-add-sync-dialog",
+    match = {
+        class = "^MEGAsync$",
+        title = "^Add sync$",
+    },
+    float = true,
+    size = { 900, 600 },
+    center = true,
+    allows_input = true,
+})
+
+-- The compact MEGA status panel paints only a 320x450 area inside an oversized
+-- XWayland surface. Match the border to the painted area and anchor it below
+-- the top-right bar, like a conventional tray popup.
+hl.window_rule({
+    name = "mega-main-panel",
+    match = {
+        class = "^MEGAsync$",
+        title = "^MEGAsync$",
+    },
+    float = true,
+    size = { 320, 450 },
+    move = { "monitor_w-window_w-15", 45 },
+    allows_input = true,
 })
 
 -- Avoid focus glitches from small XWayland helper windows.
