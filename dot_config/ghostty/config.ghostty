@@ -5,7 +5,7 @@ window-padding-x = 10
 window-padding-y = 8
 window-padding-balance = true
 window-padding-color = extend
-background-opacity = 0.94
+background-opacity = 0.93
 # background-opacity = 1
 gtk-single-instance = false
 
