@@ -1,0 +1,32 @@
+{{- if ne .chezmoi.os "windows" -}}
+#!/bin/bash
+set -euo pipefail
+
+# shell.json is deliberately interactive/create-once state. Migrate only the
+# stock tray id in place, preserving its position and any pinned/hidden items.
+config=$HOME/.config/omarchy/shell.json
+[[ -s $config ]] || exit 0
+
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+jq '
+  if .bar.layout then
+    .bar.layout |= with_entries(
+      .value |= map(
+        if .id == "omarchy.tray" then .id = "desktop.stable-tray" else . end
+      )
+    )
+  else . end
+' "$config" >"$tmp"
+
+if ! cmp -s "$config" "$tmp"; then
+  chmod --reference="$config" "$tmp"
+  mv "$tmp" "$config"
+fi
+
+shell=$HOME/.local/state/desktop-core/bin/omarchy-shell
+if [[ -x $shell ]]; then
+  "$shell" -q shell rescanPlugins || true
+  "$shell" -q shell reloadConfig || true
+fi
+{{- end }}

@@ -1,0 +1,31 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/usr/bin/env bash
+set -euo pipefail
+
+# shell.json is intentionally create-once. Migrate existing machines by adding
+# only the new widget, without resetting any interactive bar customization.
+config=$HOME/.config/omarchy/shell.json
+[[ -f $config ]] || exit 0
+
+if jq -e '.bar.layout.left[]? | select(.id == "desktop.power-menu")' "$config" >/dev/null; then
+  exit 0
+fi
+
+widget='{
+  "id": "desktop.power-menu",
+  "type": "command",
+  "exec": "~/.local/bin/desktop-power-status",
+  "interval": 3600,
+  "onClick": "~/.local/bin/power-menu",
+  "tooltip": "Power and session",
+  "fontSize": 15
+}'
+tmp=$(mktemp "${config}.XXXXXX")
+jq --argjson widget "$widget" '
+  .bar.layout.left = [$widget] + [
+    .bar.layout.left[]? | select(.id != "desktop.power-menu")
+  ]
+' "$config" >"$tmp"
+chmod --reference="$config" "$tmp"
+mv "$tmp" "$config"
+{{- end }}

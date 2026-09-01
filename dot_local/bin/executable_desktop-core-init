@@ -1,0 +1,81 @@
+#!/bin/bash
+set -euo pipefail
+
+core_path=${OMARCHY_PATH:-$HOME/.config/quickshell/omarchy-core}
+vendor_path=$HOME/.config/quickshell/omarchy-stock
+state_dir=$HOME/.local/state/desktop-core
+runtime_bin=$state_dir/bin
+
+[[ -d $vendor_path/bin ]] || {
+  echo "desktop-core-init: missing Omarchy vendor tree: $vendor_path" >&2
+  exit 1
+}
+
+mkdir -p "$state_dir" "$HOME/.config/omarchy/themes" "$HOME/.config/omarchy/backgrounds"
+
+new_bin=$(mktemp -d "$state_dir/bin.new.XXXXXX")
+old_bin=""
+cleanup() {
+  if [[ -d ${new_bin:-} ]]; then
+    rm -rf "$new_bin"
+  fi
+  if [[ -n ${old_bin:-} && -d $old_bin ]]; then
+    rm -rf "$old_bin"
+  fi
+  return 0
+}
+trap cleanup EXIT
+
+link_commands() {
+  local list=$1 source_dir=$2 command source
+
+  while IFS= read -r command || [[ -n $command ]]; do
+    command=${command%%#*}
+    command=${command//[[:space:]]/}
+    [[ -n $command ]] || continue
+    [[ $command =~ ^omarchy(-[a-z0-9]+)*$ ]] || {
+      echo "desktop-core-init: invalid command in $list: $command" >&2
+      exit 1
+    }
+
+    source=$source_dir/$command
+    [[ -x $source ]] || {
+      echo "desktop-core-init: missing executable: $source" >&2
+      exit 1
+    }
+    ln -s "$source" "$new_bin/$command"
+  done <"$list"
+}
+
+link_commands "$core_path/commands.txt" "$vendor_path/bin"
+link_commands "$core_path/local-commands.txt" "$HOME/.local/bin"
+
+if [[ -d $runtime_bin ]]; then
+  old_bin=$state_dir/bin.old.$$
+  mv "$runtime_bin" "$old_bin"
+fi
+mv "$new_bin" "$runtime_bin"
+new_bin=""
+[[ -n $old_bin ]] && rm -rf "$old_bin"
+old_bin=""
+
+PATH="$core_path/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin" \
+  "$HOME/.local/bin/omarchy-font-set" --sync
+PATH="$core_path/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin" \
+  "$HOME/.local/bin/omarchy-display-text-size" --sync
+
+current_theme=$HOME/.local/state/omarchy/current/theme
+current_background=$HOME/.local/state/omarchy/current/background
+if [[ ! -f $current_theme/colors.toml || ! -f $current_theme/shell.toml || ! -e $current_background ]]; then
+  PATH="$core_path/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin" \
+    OMARCHY_PATH="$core_path" OMARCHY_THEME_HEADLESS=1 \
+    omarchy-theme-set "Tokyo Night"
+fi
+
+# Reconnect the mutable application state to the current generated theme on
+# login. --sync does not create a new Neovim theme event when nothing changed,
+# so a later manual editor-only colorscheme survives reboots.
+PATH="$core_path/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin" \
+  "$HOME/.local/bin/desktop-theme-sync" --sync
+PATH="$core_path/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin" \
+  omarchy-theme-set-gnome

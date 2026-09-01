@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+
+# Let Aether see the pinned Omarchy templates and the narrow compatibility
+# facade, while keeping Aether itself an ordinary optional package.
+core_path=${OMARCHY_PATH:-$HOME/.config/quickshell/omarchy-core}
+aether_binary=/usr/bin/aether
+
+[[ -x $aether_binary ]] || {
+  echo "aether: install the optional 'aether' package first" >&2
+  exit 127
+}
+
+export OMARCHY_PATH=$core_path
+export PATH="$HOME/.local/state/desktop-core/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin${PATH:+:$PATH}"
+exec "$aether_binary" "$@"

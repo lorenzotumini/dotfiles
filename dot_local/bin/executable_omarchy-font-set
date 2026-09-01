@@ -1,0 +1,78 @@
+#!/bin/bash
+set -euo pipefail
+
+state_file=$HOME/.local/state/desktop-core/font
+fontconfig_file=$HOME/.config/fontconfig/conf.d/99-desktop-core-font.conf
+
+usage() {
+  echo "Usage: omarchy-font-set <font-name>" >&2
+}
+
+font_exists() {
+  fc-list -f '%{family[0]}\n' | awk -v wanted="$1" '
+    $0 == wanted { found = 1 }
+    END { exit !found }
+  '
+}
+
+default_font() {
+  if font_exists "JetBrainsMono Nerd Font"; then
+    printf '%s\n' "JetBrainsMono Nerd Font"
+  else
+    fc-match monospace -f '%{family[0]}\n'
+  fi
+}
+
+apply_fontconfig() {
+  local font_name=$1 escaped tmp
+
+  escaped=${font_name//&/&amp;}
+  escaped=${escaped//</&lt;}
+  escaped=${escaped//>/&gt;}
+  escaped=${escaped//\"/&quot;}
+  escaped=${escaped//\'/&apos;}
+
+  mkdir -p "${fontconfig_file%/*}"
+  tmp=$(mktemp "${fontconfig_file}.XXXXXX")
+  printf '%s\n' \
+    '<?xml version="1.0"?>' \
+    '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">' \
+    '<fontconfig>' \
+    '  <match target="pattern">' \
+    '    <test name="family" qual="any"><string>monospace</string></test>' \
+    "    <edit name=\"family\" mode=\"prepend_first\" binding=\"strong\"><string>${escaped}</string></edit>" \
+    '  </match>' \
+    '</fontconfig>' >"$tmp"
+  mv "$tmp" "$fontconfig_file"
+}
+
+if [[ ${1:-} == "--sync" ]]; then
+  if [[ -s $state_file ]]; then
+    IFS= read -r font_name <"$state_file"
+  else
+    font_name=$(default_font)
+    mkdir -p "${state_file%/*}"
+    printf '%s\n' "$font_name" >"$state_file"
+  fi
+  font_exists "$font_name" || font_name=$(default_font)
+  apply_fontconfig "$font_name"
+  exit 0
+fi
+
+font_name=${1:-}
+[[ -n $font_name && $# -eq 1 ]] || {
+  usage
+  exit 1
+}
+font_exists "$font_name" || {
+  echo "Font '$font_name' is not installed." >&2
+  exit 1
+}
+
+mkdir -p "${state_file%/*}"
+printf '%s\n' "$font_name" >"$state_file"
+apply_fontconfig "$font_name"
+
+pkill -SIGUSR2 ghostty 2>/dev/null || true
+omarchy-hook font-set "$font_name" 2>/dev/null || true
+omarchy-restart-shell

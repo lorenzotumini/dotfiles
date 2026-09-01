@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "desktop.stable-tray",
+  "name": "Stable system tray",
+  "version": "1.0.0",
+  "author": "Lorenzo",
+  "description": "A stable interaction wrapper around Omarchy's system tray",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Tray.qml"
+  },
+  "barWidget": {
+    "displayName": "Stable system tray",
+    "description": "Omarchy tray with stable expanded menus",
+    "category": "Status",
+    "defaultSection": "right",
+    "allowMultiple": false
+  }
+}

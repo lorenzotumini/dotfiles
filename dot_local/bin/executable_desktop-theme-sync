@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode=${1:---sync}
+requested_theme=${2:-}
+theme_dir=$HOME/.local/state/omarchy/current/theme
+theme_name_file=$HOME/.local/state/omarchy/current/theme.name
+state_dir=$HOME/.local/state/desktop-core
+nvim_state=$state_dir/neovim-theme
+btop_config=$HOME/.config/btop/btop.conf
+btop_link=$HOME/.config/btop/themes/current.theme
+
+[[ -f $theme_dir/colors.toml ]] || exit 0
+
+theme_name=$requested_theme
+if [[ -z $theme_name && -r $theme_name_file ]]; then
+  read -r theme_name <"$theme_name_file"
+fi
+[[ -n $theme_name ]] || theme_name=unknown
+
+# Stock Omarchy themes declare their native Neovim colorscheme in this file.
+# Themes without one use our palette-backed fallback, so every theme remains
+# coherent without inventing a permanent mapping table.
+nvim_colorscheme=""
+if [[ -r $theme_dir/neovim.lua ]]; then
+  nvim_colorscheme=$(sed -nE 's/.*colorscheme[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$theme_dir/neovim.lua" | head -n 1)
+fi
+[[ -n $nvim_colorscheme ]] || nvim_colorscheme=omarchy
+
+mkdir -p "$state_dir" "${btop_link%/*}"
+ln -sfn "$theme_dir/btop.theme" "$btop_link"
+
+# btop owns the rest of this interactive config. Change only its theme key.
+if [[ -f $btop_config ]]; then
+  if grep -qE '^[[:space:]]*color_theme[[:space:]]*=' "$btop_config"; then
+    sed -i -E 's|^[[:space:]]*color_theme[[:space:]]*=.*$|color_theme = "current"|' "$btop_config"
+  else
+    tmp=$(mktemp "${btop_config}.XXXXXX")
+    printf '%s\n' 'color_theme = "current"' >"$tmp"
+    cat "$btop_config" >>"$tmp"
+    mv "$tmp" "$btop_config"
+  fi
+else
+  mkdir -p "${btop_config%/*}"
+  printf '%s\n' 'color_theme = "current"' >"$btop_config"
+fi
+
+write_nvim_state=0
+if [[ $mode == --event || ! -r $nvim_state ]]; then
+  write_nvim_state=1
+elif ! grep -qxF "theme=$theme_name" "$nvim_state" || ! grep -qxF "colorscheme=$nvim_colorscheme" "$nvim_state"; then
+  write_nvim_state=1
+fi
+
+if (( write_nvim_state )); then
+  tmp=$(mktemp "$state_dir/neovim-theme.XXXXXX")
+  {
+    printf 'theme=%s\n' "$theme_name"
+    printf 'colorscheme=%s\n' "$nvim_colorscheme"
+    printf 'generation=%s\n' "$(date +%s%N)"
+  } >"$tmp"
+  mv "$tmp" "$nvim_state"
+fi
+
+if [[ $mode == --event ]]; then
+  pkill -SIGUSR2 btop >/dev/null 2>&1 || true
+fi

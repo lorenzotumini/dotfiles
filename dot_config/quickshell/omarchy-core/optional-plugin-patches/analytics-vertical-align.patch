@@ -1,0 +1,62 @@
+diff --git a/Widget.qml b/Widget.qml
+index f94ba9d..36c623d 100644
+--- a/Widget.qml
++++ b/Widget.qml
+@@ -86,13 +86,21 @@ BarWidget {
+     Row {
+       spacing: Style.space(2)
+ 
+-      Text {
+-        id: cpuText
+-        text: root.cpuUsage
+-        color: root.colored ? root.usageColor(root.cpuPercent) : (root.bar ? root.bar.barForeground : Color.foreground)
+-        font.family: root.bar ? root.bar.fontFamily : Style.font.family
+-        font.pixelSize: Style.font.caption
+-        anchors.verticalCenter: parent.verticalCenter
++      Item {
++        width: Math.ceil(cpuText.implicitWidth)
++        height: root.barSize
++
++        Text {
++          id: cpuText
++          text: root.cpuUsage
++          color: root.colored ? root.usageColor(root.cpuPercent) : (root.bar ? root.bar.barForeground : Color.foreground)
++          font.family: root.bar ? root.bar.fontFamily : Style.font.family
++          font.pixelSize: Style.font.caption
++          anchors.left: parent.left
++          anchors.right: parent.right
++          horizontalAlignment: Text.AlignLeft
++          anchors.verticalCenter: parent.verticalCenter
++        }
+       }
+ 
+       BarIconButton {
+@@ -107,13 +115,21 @@ BarWidget {
+     Row {
+       spacing: Style.space(2)
+ 
+-      Text {
+-        id: ramText
+-        text: root.ramUsed
+-        color: root.colored ? root.usageColor(root.ramPercent) : (root.bar ? root.bar.barForeground : Color.foreground)
+-        font.family: root.bar ? root.bar.fontFamily : Style.font.family
+-        font.pixelSize: Style.font.caption
+-        anchors.verticalCenter: parent.verticalCenter
++      Item {
++        width: Math.ceil(ramText.implicitWidth)
++        height: root.barSize
++
++        Text {
++          id: ramText
++          text: root.ramUsed
++          color: root.colored ? root.usageColor(root.ramPercent) : (root.bar ? root.bar.barForeground : Color.foreground)
++          font.family: root.bar ? root.bar.fontFamily : Style.font.family
++          font.pixelSize: Style.font.caption
++          anchors.left: parent.left
++          anchors.right: parent.right
++          horizontalAlignment: Text.AlignLeft
++          anchors.verticalCenter: parent.verticalCenter
++        }
+       }
+ 
+       BarIconButton {

@@ -1,0 +1,86 @@
+#!/bin/bash
+set -euo pipefail
+
+# A deliberately narrow compatibility surface for applications that detect or
+# invoke Omarchy by its umbrella command. The complete upstream dispatcher is
+# not exposed: this desktop owns themes and shell plugins, not the operating
+# system, packages, applications, menus, migrations, or updates.
+core_path=${OMARCHY_PATH:-$HOME/.config/quickshell/omarchy-core}
+runtime_bin=$HOME/.local/state/desktop-core/bin
+
+export OMARCHY_PATH=$core_path
+export PATH="$runtime_bin:$HOME/.local/bin:/usr/local/bin:/usr/bin${PATH:+:$PATH}"
+
+usage() {
+  cat <<'EOF'
+Desktop-core Omarchy compatibility commands:
+  omarchy version
+  omarchy theme set <name>
+  omarchy theme bg set <path>
+  omarchy plugin list [--json]
+  omarchy plugin validate <folder>
+  omarchy plugin enable <id> [placement]
+  omarchy plugin disable <id>
+  omarchy launch or focus tui [--app-id=<id>] <command> [args...]
+EOF
+}
+
+case "${1:-}" in
+version)
+  shift
+  exec omarchy-version "$@"
+  ;;
+theme)
+  case "${2:-}" in
+  set)
+    shift 2
+    exec omarchy-theme-set "$@"
+    ;;
+  bg)
+    [[ ${3:-} == set ]] || {
+      echo "omarchy: unsupported theme route" >&2
+      usage >&2
+      exit 2
+    }
+    shift 3
+    exec omarchy-theme-bg-set "$@"
+    ;;
+  *)
+    echo "omarchy: unsupported theme route" >&2
+    usage >&2
+    exit 2
+    ;;
+  esac
+  ;;
+plugin)
+  case "${2:-}" in
+  list | validate | enable | disable)
+    command_name=omarchy-plugin-${2}
+    shift 2
+    exec "$command_name" "$@"
+    ;;
+  *)
+    echo "omarchy: unsupported plugin route" >&2
+    usage >&2
+    exit 2
+    ;;
+  esac
+  ;;
+launch)
+  if [[ ${2:-} == or && ${3:-} == focus && ${4:-} == tui ]]; then
+    shift 4
+    exec omarchy-launch-or-focus-tui "$@"
+  fi
+  echo "omarchy: unsupported launch route" >&2
+  usage >&2
+  exit 2
+  ;;
+-h | --help | help | "")
+  usage
+  ;;
+*)
+  echo "omarchy: this route is outside the desktop-core boundary" >&2
+  usage >&2
+  exit 2
+  ;;
+esac

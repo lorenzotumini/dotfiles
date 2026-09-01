@@ -1,0 +1,13 @@
+[Unit]
+Description=Lock the desktop core before suspend
+PartOf=graphical-session.target
+BindsTo=desktop-core-shell.service
+After=graphical-session.target desktop-core-shell.service
+
+[Service]
+Type=simple
+Environment=OMARCHY_PATH=%h/.config/quickshell/omarchy-core
+Environment=PATH=%h/.config/quickshell/omarchy-core/bin:%h/.local/bin:/usr/local/bin:/usr/bin
+ExecStart=%h/.config/quickshell/omarchy-core/bin/omarchy-system-sleep-monitor
+Restart=always
+RestartSec=2

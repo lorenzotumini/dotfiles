@@ -1,0 +1,3 @@
+#!/bin/sh
+
+printf '%s\n' '{"text":"","tooltip":"Power and session"}'

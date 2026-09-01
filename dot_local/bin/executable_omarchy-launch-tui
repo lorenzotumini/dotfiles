@@ -1,0 +1,23 @@
+#!/bin/bash
+set -euo pipefail
+
+# Upstream Omarchy delegates to xdg-terminal-exec. This desktop has an
+# explicit terminal choice, so keep the same CLI/app-id contract and launch
+# Ghostty directly instead of adding another terminal-dispatch package.
+if [[ ${1:-} == --app-id=* ]]; then
+  app_id=${1#--app-id=}
+  shift
+else
+  [[ -n ${1:-} ]] || {
+    echo "Usage: omarchy-launch-tui [--app-id=<app-id>] <command> [args...]" >&2
+    exit 2
+  }
+  app_id=org.omarchy.$(basename "$1")
+fi
+
+[[ -n ${1:-} ]] || {
+  echo "omarchy-launch-tui: a command is required" >&2
+  exit 2
+}
+
+exec setsid uwsm-app -- ghostty --class="$app_id" -e "$@"

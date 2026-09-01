@@ -74,6 +74,35 @@ local function sync_terminal_background()
 	end
 end
 
+local function capture_terminal_background(reset_to_config)
+	if vim.g.neovide then
+		return
+	end
+
+	terminal_background.active = true
+	terminal_background.original = nil
+	terminal_background.query_pending = true
+	terminal_background.ready = false
+
+	-- OSC 111 clears a program's dynamic OSC 11 override. This matters when
+	-- the desktop theme changes while Neovim is running: querying first would
+	-- otherwise capture Neovim's old background instead of Ghostty's new one.
+	if reset_to_config then
+		send_to_terminal("\027]111\027\\")
+	end
+	send_to_terminal("\027]11;?\027\\")
+
+	vim.defer_fn(function()
+		if not terminal_background.query_pending then
+			return
+		end
+
+		terminal_background.query_pending = false
+		terminal_background.ready = true
+		sync_terminal_background()
+	end, 200)
+end
+
 vim.api.nvim_create_autocmd("TermResponse", {
 	desc = "Capture original terminal background",
 	callback = function(args)
@@ -103,33 +132,35 @@ vim.api.nvim_create_autocmd("TermResponse", {
 vim.api.nvim_create_autocmd("UIEnter", {
 	desc = "Capture and sync terminal background",
 	callback = function()
-		if vim.g.neovide then
-			return
-		end
-
-		terminal_background.active = true
-		terminal_background.original = nil
-		terminal_background.query_pending = true
-		terminal_background.ready = false
-
-		-- Query before applying any theme color, then fall back for terminals
+		-- Query before applying any program color, then fall back for terminals
 		-- which do not report their current background.
-		send_to_terminal("\027]11;?\027\\")
-		vim.defer_fn(function()
-			if not terminal_background.query_pending then
-				return
-			end
-
-			terminal_background.query_pending = false
-			terminal_background.ready = true
-			sync_terminal_background()
-		end, 200)
+		capture_terminal_background(false)
 	end,
 })
 
 vim.api.nvim_create_autocmd("ColorScheme", {
 	desc = "Sync terminal background",
-	callback = sync_terminal_background,
+	callback = function()
+		vim.schedule(sync_terminal_background)
+	end,
+})
+
+vim.api.nvim_create_autocmd("User", {
+	pattern = "DesktopThemeChanging",
+	desc = "Recapture terminal default before a desktop colorscheme change",
+	callback = function()
+		if terminal_background.active then
+			capture_terminal_background(true)
+		end
+	end,
+})
+
+vim.api.nvim_create_autocmd("User", {
+	pattern = "DesktopThemeChanged",
+	desc = "Sync terminal background after a desktop colorscheme change",
+	callback = function()
+		vim.schedule(sync_terminal_background)
+	end,
 })
 
 vim.api.nvim_create_autocmd({ "UILeave", "VimSuspend" }, {

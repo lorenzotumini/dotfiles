@@ -2,22 +2,26 @@
 set -u
 
 choice=$(printf '%s\n' \
-  'Lock' \
-  'Log out' \
-  'Restart' \
-  'Shut down' | fuzzel --dmenu --prompt='Power > ')
+  '󰌾  Lock' \
+  '󰤄  Suspend' \
+  '󰍃  Log out' \
+  '󰜉  Restart' \
+  '󰐥  Shut down' | fuzzel --dmenu --prompt='Power > ')
 
 case "$choice" in
-  'Lock')
-    hyprlock
+  '󰌾  Lock')
+    omarchy-system-lock
     ;;
-  'Log out')
-    loginctl terminate-session "${XDG_SESSION_ID:?Missing XDG session ID}"
+  '󰤄  Suspend')
+    systemctl suspend
     ;;
-  'Restart')
+  '󰍃  Log out')
+    hyprctl dispatch exit
+    ;;
+  '󰜉  Restart')
     systemctl reboot
     ;;
-  'Shut down')
+  '󰐥  Shut down')
     systemctl poweroff
     ;;
   '')

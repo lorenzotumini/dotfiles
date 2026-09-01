@@ -1,0 +1,19 @@
+[Unit]
+Description=Omarchy-based desktop core
+PartOf=graphical-session.target
+After=graphical-session.target
+Wants=desktop-core-sleep-lock.service
+StartLimitIntervalSec=30
+StartLimitBurst=3
+
+[Service]
+Type=simple
+Environment=OMARCHY_PATH=%h/.config/quickshell/omarchy-core
+Environment=PATH=%h/.config/quickshell/omarchy-core/bin:%h/.local/bin:/usr/local/bin:/usr/bin
+ExecStartPre=%h/.local/bin/desktop-core-init
+ExecStart=/usr/bin/quickshell -n -p %h/.config/quickshell/omarchy-core/shell
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

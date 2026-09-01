@@ -1,0 +1,82 @@
+#!/bin/bash
+set -u
+
+# The desktop core is now the only supported shell.  Keep this small command
+# as the stable session entry point; old pilot/fallback units are intentionally
+# not part of the runtime anymore.
+core_unit=desktop-core-shell.service
+sleep_lock_unit=desktop-core-sleep-lock.service
+core_path="$HOME/.config/quickshell/omarchy-core/shell"
+profile_file="$HOME/.config/desktop-shell/profile"
+
+set_profile() {
+  mkdir -p "${profile_file%/*}"
+  printf '%s\n' "$1" >"$profile_file"
+}
+
+start_core() {
+  if ! command -v quickshell >/dev/null 2>&1; then
+    printf 'quickshell is not installed; run: sudo pacman -S quickshell\n' >&2
+    return 1
+  fi
+
+  systemctl --user reset-failed "$core_unit" "$sleep_lock_unit" >/dev/null 2>&1 || true
+
+  systemctl --user start "$core_unit"
+  systemctl --user start "$sleep_lock_unit"
+}
+
+active_shell_path() {
+  printf '%s\n' "$core_path"
+}
+
+case ${1:-status} in
+  boot)
+    profile=core
+    if [[ -r $profile_file ]]; then
+      read -r profile <"$profile_file"
+    fi
+    # Older profiles are migrated to the single supported core profile.
+    [[ $profile == core || $profile == stock ]] || set_profile core
+    start_core
+    ;;
+  start|core|stock)
+    set_profile core
+    start_core
+    ;;
+  stop)
+    systemctl --user stop "$sleep_lock_unit" "$core_unit" >/dev/null 2>&1 || true
+    ;;
+  fallback|rollback|curated)
+    printf 'legacy desktop shell profiles were removed; use desktop-shell core or desktop-shell stop\n' >&2
+    exit 2
+    ;;
+  restart)
+    if systemctl --user is-active --quiet "$core_unit"; then
+      systemctl --user restart "$core_unit"
+    else
+      set_profile core
+      start_core
+    fi
+    ;;
+  status)
+    printf 'Persistent profile: '
+    if [[ -r $profile_file ]]; then
+      head -n 1 "$profile_file"
+    else
+      printf 'core (default)\n'
+    fi
+    systemctl --user --no-pager --full status "$core_unit" "$sleep_lock_unit"
+    ;;
+  logs)
+    journalctl --user -u "$core_unit" -n 100 --no-pager
+    ;;
+  panel)
+    panel=${2:?usage: desktop-shell panel audio|bluetooth|clock|monitor|network|power|weather}
+    timeout 5s quickshell ipc -p "$(active_shell_path)" call "omarchy.$panel" toggle
+    ;;
+  *)
+    printf 'usage: %s [boot|core|stop|restart|status|logs|panel NAME]\n' "$0" >&2
+    exit 2
+    ;;
+esac

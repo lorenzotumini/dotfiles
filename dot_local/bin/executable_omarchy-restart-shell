@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+
+if command -v omarchy-hyprland-session-locked >/dev/null 2>&1 && omarchy-hyprland-session-locked; then
+  echo "Refusing to restart the desktop shell while the session is locked." >&2
+  exit 1
+fi
+
+exec "$HOME/.local/bin/desktop-shell" restart

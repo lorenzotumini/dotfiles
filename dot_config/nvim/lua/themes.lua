@@ -2,11 +2,20 @@ local M = {}
 
 M.prefer_transparency = true
 M.current_theme = nil
+M.current_desktop_generation = nil
+
+local desktop_theme_watcher = nil
 
 -- Each family owns its native configuration and optional post-colorscheme
 -- adjustments. Variants point to the same family, so Telescope previews and
 -- selections behave consistently.
 local theme_families = {
+	{
+		schemes = { "omarchy" },
+		-- colors/omarchy.lua reads the live palette. Registering it as
+		-- configurable lets the existing transparency commands reload it.
+		configure = function() end,
+	},
 	{
 		schemes = { "kanagawa", "kanagawa-wave", "kanagawa-dragon", "kanagawa-lotus" },
 		configure = function(transparent)
@@ -153,6 +162,18 @@ function M.get_transparency_file()
 	return get_state_file("transparency")
 end
 
+function M.get_desktop_theme_file()
+	if vim.fn.has("win32") == 1 then
+		return nil
+	end
+
+	return vim.fn.expand("~/.local/state/desktop-core/neovim-theme")
+end
+
+function M.get_desktop_theme_generation_file()
+	return get_state_file("desktop_theme_generation")
+end
+
 local function read_first_line(path)
 	if vim.fn.filereadable(path) ~= 1 then
 		return nil
@@ -228,8 +249,105 @@ function M.save_current_theme(name)
 	return write_first_line(M.get_theme_file(), name, "colorscheme")
 end
 
+local function read_desktop_theme()
+	local path = M.get_desktop_theme_file()
+	if not path or vim.fn.filereadable(path) ~= 1 then
+		return nil
+	end
+
+	local desktop = {}
+	for _, line in ipairs(vim.fn.readfile(path)) do
+		local key, value = line:match("^([%w_]+)=(.*)$")
+		if key then
+			desktop[key] = value
+		end
+	end
+
+	if not desktop.generation or not desktop.colorscheme or desktop.colorscheme == "" then
+		return nil
+	end
+
+	return desktop
+end
+
+function M.load_desktop_theme(force)
+	local desktop = read_desktop_theme()
+	if not desktop then
+		return false
+	end
+	if M.current_desktop_generation == desktop.generation then
+		return false
+	end
+
+	local applied_generation = read_first_line(M.get_desktop_theme_generation_file())
+	if not force and applied_generation == desktop.generation then
+		M.current_desktop_generation = desktop.generation
+		return false
+	end
+
+	vim.api.nvim_exec_autocmds("User", { pattern = "DesktopThemeChanging" })
+	if not M.safe_colorscheme(desktop.colorscheme) then
+		return false
+	end
+
+	M.current_desktop_generation = desktop.generation
+	write_first_line(M.get_desktop_theme_generation_file(), desktop.generation, "desktop theme generation")
+	vim.api.nvim_exec_autocmds("User", {
+		pattern = "DesktopThemeChanged",
+		data = { theme = desktop.theme, colorscheme = desktop.colorscheme },
+	})
+	return true
+end
+
+function M.watch_desktop_theme()
+	local path = M.get_desktop_theme_file()
+	if not path or desktop_theme_watcher then
+		return
+	end
+
+	local directory = vim.fs.dirname(path)
+	local filename = vim.fs.basename(path)
+	desktop_theme_watcher = vim.uv.new_fs_event()
+	if not desktop_theme_watcher then
+		return
+	end
+
+	local ok = desktop_theme_watcher:start(directory, {}, function(error_message, changed_name)
+		if error_message or changed_name ~= filename then
+			return
+		end
+		vim.schedule(function()
+			-- The desktop writes this file atomically after Ghostty has reloaded
+			-- its new palette. Force every live Neovim process to consume the
+			-- generation; the on-disk marker is only a startup/manual-theme aid.
+			M.load_desktop_theme(true)
+		end)
+	end)
+
+	if not ok then
+		desktop_theme_watcher:close()
+		desktop_theme_watcher = nil
+		return
+	end
+
+	vim.api.nvim_create_autocmd("VimLeavePre", {
+		once = true,
+		callback = function()
+			if desktop_theme_watcher and not desktop_theme_watcher:is_closing() then
+				desktop_theme_watcher:stop()
+				desktop_theme_watcher:close()
+			end
+			desktop_theme_watcher = nil
+		end,
+	})
+end
+
 function M.load_last_theme(default)
 	default = default or "kanagawa-wave"
+	if M.load_desktop_theme() then
+		return
+	end
+
 	local saved = read_first_line(M.get_theme_file())
 
 	if saved and saved ~= "" and M.safe_colorscheme(saved) then
@@ -319,6 +437,7 @@ function M.setup(opts)
 	M.setup_autocmd()
 	M.setup_usercmd()
 	M.load_last_theme(opts.default)
+	M.watch_desktop_theme()
 end
 
 return M

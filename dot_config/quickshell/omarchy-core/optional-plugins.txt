@@ -1,0 +1,4 @@
+# Reviewed optional trials. These are records, not an automatic marketplace.
+# id                 upstream URL                                             pinned commit
+analytics-omarchy    https://github.com/Liran-shternberg/analytics-omarchy.git a8a2456c274fe52b69c3cb154511b04da69ed2d9
+# local patch: optional-plugin-patches/analytics-vertical-align.patch

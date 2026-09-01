@@ -2,7 +2,11 @@
 
 [general]
 working_directory = "{{ .chezmoi.homeDir | replace "\\" "/" }}"
+{{- if eq .chezmoi.os "windows" }}
 import = ["themes/carbonfox.toml"]
+{{- else }}
+import = ["~/.local/state/omarchy/current/theme/alacritty.toml", "~/.local/state/desktop-core/alacritty-font-size.toml"]
+{{- end }}
 
 [window]
 dimensions = { columns = 115, lines = 30 }
@@ -22,7 +26,13 @@ history = 5000
 normal = { family = "CodeNewRoman Nerd Font", style = "Regular" }
 bold = { family = "CodeNewRoman Nerd Font", style = "Bold" }
 italic = { family = "CodeNewRoman Nerd Font", style = "Italic" }
+{{- if eq .chezmoi.os "windows" }}
 size = 15.0
+{{- else }}
+# The imported desktop size is only a default. Uncommenting a size here wins,
+# because Alacritty loads this importing file after the files listed above.
+# size = 13.0
+{{- end }}
 offset.x = 0
 offset.y = 3
 

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+"$HOME/.local/bin/desktop-theme-sync" --event "${1:-}"

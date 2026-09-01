@@ -1,0 +1,5 @@
+# Local adapters that intentionally replace or extend an upstream command.
+omarchy-display-text-size
+omarchy-font-set
+omarchy-launch-tui
+omarchy-restart-shell

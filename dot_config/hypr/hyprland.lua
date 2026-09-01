@@ -1,42 +1,47 @@
 -- Minimal, readable Hyprland 0.56+ configuration.
 -- This uses Hyprland's native Lua configuration API.
 
-hl.monitor({
-    output = "",
-    mode = "preferred",
-    position = "auto",
-    scale = "1.25",
-})
+local home = os.getenv("HOME")
+local monitorsConfig = home .. "/.config/hypr/monitors.lua"
+local monitorsFile = io.open(monitorsConfig, "r")
+local monitorsLoaded = false
+if monitorsFile then
+    monitorsFile:close()
+    monitorsLoaded = pcall(dofile, monitorsConfig)
+end
+if not monitorsLoaded then
+    hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1.25 })
+end
 
 local terminal = "ghostty"
 local fileManager = "nautilus"
 local menu = "fuzzel"
 local browser = "firefox"
 local mainMod = "SUPER"
+local desktopCore = home .. "/.config/quickshell/omarchy-core"
+local desktopCoreBin = desktopCore .. "/bin"
+local sessionPath = os.getenv("PATH") or "/usr/local/bin:/usr/bin"
 
 hl.on("hyprland.start", function ()
-    -- Keep GTK preferences and Blueman's non-visual pairing agent aligned
-    -- with this minimal desktop. Waybar provides the Bluetooth icon.
-    hl.exec_cmd([[gsettings set org.gnome.desktop.interface color-scheme prefer-dark]])
-    hl.exec_cmd([[gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark]])
-    hl.exec_cmd([[gsettings set org.blueman.general plugin-list "['!StatusNotifierItem']"]])
-    hl.exec_cmd("hyprpaper")
-    hl.exec_cmd("waybar")
-    hl.exec_cmd("mako")
-    hl.exec_cmd("hypridle")
+    -- The desktop initializer starts the single supported Omarchy-derived core
+    -- and reconnects its generated theme/application state.
+    hl.exec_cmd(home .. "/.local/bin/desktop-shell boot")
     hl.exec_cmd("tailscale systray")
-    hl.exec_cmd("/usr/lib/hyprpolkitagent/hyprpolkitagent")
 end)
 
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
--- Force the dark Adwaita variant for standalone GTK 3/4 utilities such as
--- Blueman and nm-connection-editor.  The matching gsettings preference remains
--- in place for libadwaita applications.
-hl.env("GTK_THEME", "Adwaita:dark")
 hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
 hl.env("NVD_BACKEND", "direct")
 hl.env("TERMINAL", terminal)
+hl.env("OMARCHY_PATH", desktopCore)
+-- Keep the existing, easy-to-find screenshot location while using Omarchy's
+-- native capture helper (which otherwise defaults to the top-level Pictures
+-- directory).
+hl.env("OMARCHY_SCREENSHOT_DIR", home .. "/Pictures/Screenshots")
+if not string.find(":" .. sessionPath .. ":", ":" .. desktopCoreBin .. ":", 1, true) then
+    hl.env("PATH", desktopCoreBin .. ":" .. sessionPath)
+end
 
 hl.config({
     -- Let XWayland applications render at native pixels. Applications that
@@ -119,8 +124,13 @@ hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + SPACE", hl.dsp.window.float({ action = "toggle" }))
 hl.bind("ALT + F4", hl.dsp.window.close())
-hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("hyprlock"))
+hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("omarchy-system-lock"))
 hl.bind(mainMod .. " + SHIFT + E", hl.dsp.exit())
+
+-- The Omarchy menu is intentionally absent. Keep its native theme and
+-- background selectors on the stock direct shortcuts.
+hl.bind(mainMod .. " + CTRL + SPACE", hl.dsp.exec_cmd([=[bash -lc 'background=$(omarchy-theme-bg-switcher); [[ -n $background ]] && omarchy-theme-bg-set "$background"']=]))
+hl.bind(mainMod .. " + CTRL + SHIFT + SPACE", hl.dsp.exec_cmd([=[bash -lc 'theme=$(omarchy-theme-switcher); [[ -n $theme ]] && omarchy-theme-set "$theme"']=]))
 
 -- Focus using either arrows or Vim-style keys.
 local directions = {
@@ -160,19 +170,27 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- Audio and media keys work even while the session is locked.
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
-hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
-hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true })
-hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
-hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("omarchy-audio-output-volume raise"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("omarchy-audio-output-volume lower"), { locked = true, repeating = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("omarchy-audio-output-volume mute-toggle"), { locked = true })
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("omarchy-audio-input-mute"), { locked = true })
+hl.bind("XF86AudioNext", hl.dsp.exec_cmd("omarchy-shell media next"), { locked = true })
+hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("omarchy-shell media playPause"), { locked = true })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("omarchy-shell media playPause"), { locked = true })
+hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("omarchy-shell media previous"), { locked = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("omarchy-brightness-display +5%"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("omarchy-brightness-display 5%-"), { locked = true, repeating = true })
+hl.bind("XF86KbdBrightnessUp", hl.dsp.exec_cmd("omarchy-brightness-keyboard up"), { locked = true, repeating = true })
+hl.bind("XF86KbdBrightnessDown", hl.dsp.exec_cmd("omarchy-brightness-keyboard down"), { locked = true, repeating = true })
 
--- Screenshots are written to ~/Pictures/Screenshots.
-hl.bind("Print", hl.dsp.exec_cmd([[sh -c 'mkdir -p "$HOME/Pictures/Screenshots"; file="$HOME/Pictures/Screenshots/$(date +%Y%m%d-%H%M%S).png"; grim -g "$(slurp)" "$file" && notify-send "Screenshot saved" "$file"']]))
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd([[sh -c 'mkdir -p "$HOME/Pictures/Screenshots"; file="$HOME/Pictures/Screenshots/$(date +%Y%m%d-%H%M%S).png"; grim -g "$(slurp)" "$file" && notify-send "Screenshot saved" "$file"']]))
-hl.bind("SHIFT + Print", hl.dsp.exec_cmd([[sh -c 'mkdir -p "$HOME/Pictures/Screenshots"; file="$HOME/Pictures/Screenshots/$(date +%Y%m%d-%H%M%S).png"; grim "$file" && notify-send "Screenshot saved" "$file"']]))
+-- Screenshots are saved in the configured Pictures directory and copied as
+-- PNG to the Wayland clipboard, so the latest capture can be pasted with
+-- Ctrl+V in image-aware applications.
+-- Print: full current monitor. Super+Shift+S: interactively select a region.
+-- Shift+Print: pick a window/monitor rectangle (a useful third option).
+hl.bind("Print", hl.dsp.exec_cmd("omarchy-capture-screenshot fullscreen slurp"))
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("omarchy-capture-screenshot region slurp"))
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd("omarchy-capture-screenshot windows slurp"))
 
 -- Small global conveniences formerly provided by AutoHotkey/PowerToys.
 hl.bind(mainMod .. " + SHIFT + C", hl.dsp.exec_cmd([[sh -c 'color=$(hyprpicker -f hex) && printf %s "$color" | wl-copy && notify-send "Color copied" "$color"']]))
@@ -227,3 +245,29 @@ hl.window_rule({
     },
     no_focus = true,
 })
+
+-- Omarchy generates this small fragment from the active native theme. Loading
+-- it last lets themes own the active/inactive borders without taking over the
+-- rest of this Hyprland configuration.
+-- Stock Kanagawa also uses Omarchy's small `o.window` helper for its terminal
+-- opacity rule. Provide that one compatibility primitive without importing
+-- the distribution's full Hyprland helper/config stack.
+o = o or {}
+o.window = o.window or function(match, rules)
+    rules.match = rules.match or {}
+    if type(match) == "string" then
+        rules.match.class = match
+    else
+        for key, value in pairs(match) do
+            rules.match[key] = value
+        end
+    end
+    hl.window_rule(rules)
+end
+
+local themeHyprland = home .. "/.local/state/omarchy/current/theme/hyprland.lua"
+local themeFile = io.open(themeHyprland, "r")
+if themeFile then
+    themeFile:close()
+    dofile(themeHyprland)
+end
