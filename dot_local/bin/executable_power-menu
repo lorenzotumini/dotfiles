@@ -16,7 +16,7 @@ case "$choice" in
     systemctl suspend
     ;;
   '󰍃  Log out')
-    hyprctl dispatch exit
+    hyprctl --instance 0 eval 'hl.dispatch(hl.dsp.exit())'
     ;;
   '󰜉  Restart')
     systemctl reboot

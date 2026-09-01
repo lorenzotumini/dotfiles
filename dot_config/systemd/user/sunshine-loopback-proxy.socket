@@ -1,0 +1,9 @@
+[Unit]
+Description=Loopback access to Sunshine web UI
+PartOf=graphical-session.target
+
+[Socket]
+ListenStream=127.0.0.1:47990
+
+[Install]
+WantedBy=graphical-session.target

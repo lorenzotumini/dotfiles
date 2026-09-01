@@ -29,6 +29,7 @@ README.md
 .config/omarchy/**
 .config/quickshell/**
 .config/starship.toml
+.config/sunshine/**
 .config/systemd/**
 .config/xkb/**
 .config/xdg-desktop-portal/**
@@ -48,4 +49,9 @@ README.md
 AppData/**
 Documents/PowerShell/**
 .glzr/**
+{{ end }}
+
+# Sunshine is tied to the physical desktop's display and Tailscale address.
+{{ if ne .chezmoi.hostname "desktop" }}
+.config/sunshine/**
 {{ end }}

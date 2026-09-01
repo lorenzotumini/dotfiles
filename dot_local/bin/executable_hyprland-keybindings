@@ -1,0 +1,81 @@
+#!/bin/sh
+
+set -eu
+
+keybindings=$(cat <<'EOF'
+Applications
+  Super+Enter                 Terminal
+  Super+D                     Application launcher
+  Super+E                     File manager
+  Super+B                     Browser
+  Super+Ctrl+K                This cheatsheet
+
+Window management
+  Super+Q / Alt+F4            Close window
+  Super+Space                 Toggle floating
+  Super+F                     Fullscreen
+  Super+Alt+F                 Full width
+  Super+Ctrl+F                Tiled fullscreen
+  Super+P                     Toggle pseudo window
+  Super+Ctrl+J                Toggle split orientation
+  Super+Alt+L                 Toggle workspace layout
+  Super+G                     Toggle window grouping
+  Super+Alt+G                 Move window out of group
+  Super+Alt+Tab               Next window in group
+  Super+Alt+Shift+Tab         Previous window in group
+
+Focus and movement
+  Super+Arrow / Super+HJKL    Focus window
+  Super+Shift+Arrow/HJKL      Swap window
+  Super+Alt+Arrow             Group with neighbor
+  Super+1..0                  Switch workspace 1..10
+  Super+Shift+1..0            Move window to workspace
+  Super+Shift+Alt+1..0        Move silently to workspace
+  Super+Tab / Shift+Tab       Next / previous workspace
+  Super+Ctrl+Tab              Previously used workspace
+  Alt+Tab / Alt+Shift+Tab     Next / previous window
+  Ctrl+Alt+Tab                Next monitor
+  Ctrl+Alt+Shift+Tab          Previous monitor
+  Super+Shift+Alt+Arrow       Move workspace to monitor
+
+Resize
+  Super+- / Super+=           Resize horizontally
+  Super+Shift+-/=             Resize vertically
+  Super+Alt+-/=               Resize by a small amount
+  Super+Shift+Alt+-/=         Vertical resize by a small amount
+
+Desktop core
+  Super+S                     Show/hide scratchpad
+  Super+Alt+S                 Send window to scratchpad
+  Super+Shift+Space           Toggle top bar
+  Super+Ctrl+Space            Background switcher
+  Super+Ctrl+Shift+Space      Theme switcher
+  Super+Ctrl+A                Audio panel
+  Super+Ctrl+B                Bluetooth panel
+  Super+Ctrl+D                Display panel
+  Super+Ctrl+W                Network panel
+  Super+Ctrl+P                Power panel
+  Super+Ctrl+Alt+D            Calendar panel
+  Super+Ctrl+T                System activity
+  Super+Ctrl+N                Toggle nightlight
+  Super+Ctrl+I                Toggle idle locking
+  Super+Ctrl+Z                Increase cursor zoom
+  Super+Ctrl+Alt+Z            Reset cursor zoom
+  Super+Slash / Super+Alt+Slash Increase / decrease monitor scaling
+
+Capture and hardware
+  Print                       Fullscreen screenshot
+  Super+Shift+S               Region screenshot
+  Shift+Print                 Window/monitor screenshot
+  Super+Shift+C               Pick color to clipboard
+  Media keys                  Volume, playback, and brightness
+EOF
+)
+
+printf '%s\n' "$keybindings" | fuzzel \
+  --dmenu \
+  --no-icons \
+  --no-sort \
+  --prompt='Keybindings > ' \
+  --lines=18 \
+  --width=78 >/dev/null

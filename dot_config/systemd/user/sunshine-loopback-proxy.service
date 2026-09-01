@@ -1,0 +1,7 @@
+[Unit]
+Description=Proxy localhost to Tailscale-bound Sunshine web UI
+Requires=app-dev.lizardbyte.app.Sunshine.service
+After=app-dev.lizardbyte.app.Sunshine.service
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd 100.107.6.2:47990

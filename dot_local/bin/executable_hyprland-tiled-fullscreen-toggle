@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+fullscreen_client=$(hyprctl activewindow -j | jq -r '.fullscreenClient // 0')
+
+if [ "$fullscreen_client" = 2 ]; then
+    hyprctl dispatch fullscreenstate 0 0 >/dev/null
+else
+    hyprctl dispatch fullscreenstate 0 2 >/dev/null
+fi

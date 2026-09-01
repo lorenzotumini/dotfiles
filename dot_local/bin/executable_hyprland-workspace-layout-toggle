@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -eu
+
+active_workspace=$(hyprctl activeworkspace -j)
+workspace_id=$(printf '%s\n' "$active_workspace" | jq -r '.id')
+current_layout=$(printf '%s\n' "$active_workspace" | jq -r '.tiledLayout // "dwindle"')
+
+if [ "$current_layout" = "dwindle" ]; then
+    next_layout=scrolling
+else
+    next_layout=dwindle
+fi
+
+hyprctl keyword workspace "$workspace_id, layout:$next_layout" >/dev/null
