@@ -26,6 +26,10 @@ hl.on("hyprland.start", function ()
     -- The desktop initializer starts the single supported Omarchy-derived core
     -- and reconnects its generated theme/application state.
     hl.exec_cmd(home .. "/.local/bin/desktop-shell boot")
+    -- Launch MegaSync through UWSM after the Quickshell tray host is ready.
+    -- Its XDG autostart entry is disabled for Hyprland below because this
+    -- session does not activate xdg-desktop-autostart.target.
+    hl.exec_cmd("sleep 3 && uwsm-app -- gtk-launch megasync.desktop")
     hl.exec_cmd("tailscale systray")
 end)
 
@@ -282,8 +286,9 @@ hl.window_rule({
 })
 
 -- The compact MEGA status panel paints only a 320x450 area inside an oversized
--- XWayland surface. Match the border to the painted area and anchor it below
--- the top-right bar, like a conventional tray popup.
+-- XWayland surface. Match the border to the painted area and place it near the
+-- cursor. Keep the original 15px side margin and reserve 45px at both vertical
+-- edges so the panel clears the bar whether it is at the top or bottom.
 hl.window_rule({
     name = "mega-main-panel",
     match = {
@@ -292,7 +297,10 @@ hl.window_rule({
     },
     float = true,
     size = { 320, 450 },
-    move = { "monitor_w-window_w-15", 45 },
+    move = {
+        "15+((monitor_w-window_w-30)*(cursor_x/monitor_w))",
+        "45+((monitor_h-window_h-90)*(cursor_y/monitor_h))",
+    },
     allows_input = true,
 })
 
