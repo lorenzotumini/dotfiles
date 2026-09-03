@@ -80,14 +80,12 @@ Panel {
     var list = []
     for (var i = 0; i < candidateSinks.length; i++)
       if (sinkAvailable(candidateSinks[i])) list.push(candidateSinks[i])
-    if (sink && list.indexOf(sink) < 0) list.unshift(sink)
-    return list
+    return Model.uniqueAudioDevices(list, sink)
   }
 
   readonly property var rawAudioSources: {
     var list = candidateSources.slice()
-    if (source && list.indexOf(source) < 0) list.unshift(source)
-    return list
+    return Model.uniqueAudioDevices(list, source)
   }
 
   readonly property var audioSinks: rawAudioSinks.length > 0 ? rawAudioSinks : cachedAudioSinks

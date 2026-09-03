@@ -77,6 +77,18 @@ fi
 (( $+commands[direnv] )) && eval "$(direnv hook zsh)"
 (( $+commands[herdr] )) && source <(herdr completion zsh)
 
+# Keep Herdr's saved pane/workspace CWD in sync when a shell changes
+# directory. Herdr consumes the standard OSC 7 file URL; reporting on both
+# chpwd and precmd covers immediate `cd` changes and the initial prompt.
+if [[ "${HERDR_ENV:-}" == 1 ]]; then
+	autoload -Uz add-zsh-hook
+	_herdr_report_cwd() {
+		printf '\033]7;file://%s%s\033\\' "${HOST:-localhost}" "$PWD"
+	}
+	add-zsh-hook chpwd _herdr_report_cwd
+	add-zsh-hook precmd _herdr_report_cwd
+fi
+
 if (( $+commands[eza] )); then
 	alias ls='eza --group-directories-first --icons=auto'
 	alias ll='eza --long --git --icons=auto --group-directories-first'

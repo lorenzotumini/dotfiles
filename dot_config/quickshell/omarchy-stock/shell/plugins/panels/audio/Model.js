@@ -22,6 +22,58 @@ function listSnapshot(list) {
   return list && list.slice ? list.slice() : []
 }
 
+// PipeWire can retain an ALSA node after a USB/display reconnect or a
+// profile re-enumeration. Those nodes have different object ids but reuse the
+// same logical node name, so using the id as the list identity would show the
+// same device more than once. Keep the newest node for ordinary duplicates;
+// the caller can provide the current default to make that choice explicit.
+function audioDeviceKey(node) {
+  if (!node) return ""
+  var name = String(node.name || "").trim()
+  if (name) return "name:" + name
+  if (node.id !== undefined && node.id !== null) return "id:" + String(node.id)
+  return ""
+}
+
+function uniqueAudioDevices(list, preferred) {
+  var values = Array.isArray(list) ? list : []
+  var result = []
+  var indexes = {}
+
+  function nodeId(node) {
+    var id = Number(node && node.id)
+    return isNaN(id) ? -1 : id
+  }
+
+  for (var i = 0; i < values.length; i++) {
+    var node = values[i]
+    if (!node) continue
+
+    var key = audioDeviceKey(node)
+    if (!key || indexes[key] === undefined) {
+      if (key) indexes[key] = result.length
+      result.push(node)
+      continue
+    }
+
+    var index = indexes[key]
+    var existing = result[index]
+    if (nodeId(node) > nodeId(existing)) result[index] = node
+  }
+
+  // Prefer the node PipeWire currently reports as default. This also fixes
+  // the object-identity trap in Panel.qml: two wrappers for the same node can
+  // fail indexOf() even though their names refer to one logical device.
+  if (preferred) {
+    var preferredKey = audioDeviceKey(preferred)
+    var preferredIndex = preferredKey ? indexes[preferredKey] : undefined
+    if (preferredIndex === undefined) result.unshift(preferred)
+    else result[preferredIndex] = preferred
+  }
+
+  return result
+}
+
 function outputVolumeName(volume, muted) {
   if (muted) return "Muted"
   var p = Math.round(volume * 100)
@@ -257,6 +309,8 @@ if (typeof module !== "undefined") {
     matchingMprisStreamLabel: matchingMprisStreamLabel,
     unmatchedMprisStreamLabel: unmatchedMprisStreamLabel,
     streamLabel: streamLabel,
-    streamRepresentsPlayer: streamRepresentsPlayer
+    streamRepresentsPlayer: streamRepresentsPlayer,
+    audioDeviceKey: audioDeviceKey,
+    uniqueAudioDevices: uniqueAudioDevices
   }
 }
