@@ -2,7 +2,39 @@ return {
 	"RaafatTurki/hex.nvim",
 	event = "VeryLazy",
 	config = function()
-		require("hex").setup()
+		local image_extensions = {
+			png = true,
+			jpg = true,
+			jpeg = true,
+			gif = true,
+			webp = true,
+			avif = true,
+		}
+		local is_image_file = function()
+			return image_extensions[vim.fn.expand("%:e"):lower()] == true
+		end
+
+		require("hex").setup({
+			-- image.nvim displays these files directly. Letting hex.nvim filter them
+			-- through xxd races its input pipe and raises E5677 when opened by Neo-tree.
+			is_file_binary_pre_read = function()
+				if is_image_file() or vim.bo.filetype ~= "" then
+					return false
+				end
+				if vim.bo.binary then
+					return true
+				end
+				local extension = vim.fn.expand("%:e"):lower()
+				return vim.tbl_contains({ "out", "bin", "exe", "dll" }, extension)
+			end,
+			is_file_binary_post_read = function()
+				if is_image_file() then
+					return false
+				end
+				local encoding = vim.bo.fileencoding ~= "" and vim.bo.fileencoding or vim.o.encoding
+				return encoding ~= "utf-8"
+			end,
+		})
 
 		-- Safely override internal function to avoid mini.pairs conflict
 		local ok, utils = pcall(require, "hex.utils")

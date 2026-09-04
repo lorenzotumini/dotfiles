@@ -15,7 +15,6 @@ if use_native_images then
 	molten_dependencies = {
 		{
 			"3rd/image.nvim",
-			version = "1.5.1",
 			build = false,
 			opts = {
 				backend = "kitty",

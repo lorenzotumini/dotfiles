@@ -23,7 +23,9 @@ return {
 		"folke/snacks.nvim",
 		priority = 1000,
 		opts = {
-			bigfile = { enabled = true },
+			-- Images are rendered by image.nvim; treating their binary data as a
+			-- large text buffer is unhelpful. Disable this optional safeguard.
+			bigfile = { enabled = false },
 			dashboard = { enabled = false },
 			explorer = { enabled = false }, -- neotree alternative
 			indent = {
