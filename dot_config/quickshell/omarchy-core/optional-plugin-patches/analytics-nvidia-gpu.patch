@@ -1,0 +1,128 @@
+--- a/Widget.qml
++++ b/Widget.qml
+@@ -12,6 +12,10 @@
+   property real cpuPercent: 0
+   property string ramUsed: ""
+   property real ramPercent: 0
++  property string gpuUsage: ""
++  property real gpuPercent: 0
++  property string gpuTooltip: ""
++  property bool gpuAvailable: false
+   readonly property bool colored: String(setting("colored", true)) !== "false"
+   readonly property string colorMode: String(setting("colorMode", "theme")).toLowerCase()
+ 
+@@ -42,14 +47,20 @@
+   implicitWidth: barRow.implicitWidth
+   implicitHeight: barRow.implicitHeight
+ 
+-  Component.onCompleted: statsProc.running = true
++  Component.onCompleted: {
++    statsProc.running = true
++    gpuProc.running = true
++  }
+ 
+   Timer {
+     id: poll
+     interval: 3000
+     repeat: true
+     running: true
+-    onTriggered: statsProc.running = true
++    onTriggered: {
++      if (!statsProc.running) statsProc.running = true
++      if (!gpuProc.running) gpuProc.running = true
++    }
+   }
+ 
+   Process {
+@@ -62,6 +73,22 @@
+     }
+   }
+ 
++  Process {
++    id: gpuProc
++    running: false
++    command: ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu", "--format=csv,noheader,nounits"]
++    stdout: StdioCollector {
++      waitForEnd: true
++      onStreamFinished: root.parseGpuStats(text)
++    }
++    stderr: StdioCollector {
++      waitForEnd: true
++      onStreamFinished: {
++        if (String(text).trim().length > 0) root.gpuAvailable = false
++      }
++    }
++  }
++
+   function parseStats(raw) {
+     var lines = String(raw).split("\n")
+     for (var i = 0; i < lines.length; i++) {
+@@ -79,6 +105,30 @@
+     }
+   }
+ 
++  function parseGpuStats(raw) {
++    var line = String(raw).trim().split("\n")[0]
++    var values = line.split(",")
++    if (values.length < 4) {
++      root.gpuAvailable = false
++      return
++    }
++
++    var utilization = parseFloat(values[0])
++    var used = parseFloat(values[1])
++    var total = parseFloat(values[2])
++    var temperature = parseFloat(values[3])
++    if (!isFinite(utilization) || !isFinite(used) || !isFinite(total) || !isFinite(temperature)) {
++      root.gpuAvailable = false
++      return
++    }
++
++    root.gpuPercent = utilization
++    root.gpuUsage = Math.round(utilization) + "%"
++    root.gpuTooltip = "GPU " + Math.round(utilization) + "% · VRAM " + Math.round(used)
++      + " MiB / " + Math.round(total) + " MiB · " + Math.round(temperature) + "°C"
++    root.gpuAvailable = true
++  }
++
+   Row {
+     id: barRow
+     spacing: Style.space(8)
+@@ -138,6 +188,37 @@
+         onPressed: function(b) {
+           root.openBtop()
+         }
++      }
++    }
++
++    Row {
++      spacing: Style.space(2)
++      visible: root.gpuAvailable
++
++      Item {
++        width: Math.ceil(gpuText.implicitWidth)
++        height: root.barSize
++
++        Text {
++          id: gpuText
++          text: root.gpuUsage
++          color: root.colored ? root.usageColor(root.gpuPercent) : (root.bar ? root.bar.barForeground : Color.foreground)
++          font.family: root.bar ? root.bar.fontFamily : Style.font.family
++          font.pixelSize: Style.font.caption
++          anchors.left: parent.left
++          anchors.right: parent.right
++          horizontalAlignment: Text.AlignLeft
++          anchors.verticalCenter: parent.verticalCenter
++        }
++      }
++
++      BarIconButton {
++        bar: root.bar
++        text: "󰢮"
++        tooltipText: root.gpuTooltip
++        onPressed: function(b) {
++          root.openBtop()
++        }
+       }
+     }
+   }

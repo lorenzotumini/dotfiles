@@ -179,7 +179,7 @@ bind(mainMod .. " + CTRL + J", hl.dsp.layout("togglesplit"), "Toggle split orien
 bind(mainMod .. " + P", hl.dsp.window.pseudo(), "Toggle pseudo window")
 bind(mainMod .. " + ALT + F", hl.dsp.window.fullscreen({ mode = "maximized" }), "Full width")
 bind(mainMod .. " + CTRL + F", hl.dsp.exec_cmd(home .. "/.local/bin/hyprland-tiled-fullscreen-toggle"), "Tiled fullscreen")
-bind(mainMod .. " + ALT + L", hl.dsp.exec_cmd(home .. "/.local/bin/hyprland-workspace-layout-toggle"), "Toggle workspace layout")
+bind(mainMod .. " + ALT + SHIFT + L", hl.dsp.exec_cmd("omarchy-shell workspace-layout toggle"), "Workspace layout panel")
 bind(mainMod .. " + SLASH", hl.dsp.exec_cmd("omarchy-hyprland-monitor-scaling up"), "Increase monitor scaling")
 bind(mainMod .. " + ALT + SLASH", hl.dsp.exec_cmd("omarchy-hyprland-monitor-scaling down"), "Decrease monitor scaling")
 
@@ -342,4 +342,15 @@ local themeFile = io.open(themeHyprland, "r")
 if themeFile then
     themeFile:close()
     dofile(themeHyprland)
+end
+
+-- The optional Workspace Layout plugin generates this file after its first
+-- launch. Keeping this guarded loader in the managed configuration avoids an
+-- optional plugin editing this file itself; without the generated file it is
+-- a no-op.
+local workspaceLayoutHyprland = home .. "/.config/hypr/omarchy-workspace-layout.lua"
+local workspaceLayoutFile = io.open(workspaceLayoutHyprland, "r")
+if workspaceLayoutFile then
+    workspaceLayoutFile:close()
+    dofile(workspaceLayoutHyprland)
 end

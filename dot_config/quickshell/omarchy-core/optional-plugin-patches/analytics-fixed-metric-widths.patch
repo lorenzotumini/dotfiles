@@ -1,0 +1,73 @@
+--- a/Widget.qml
++++ b/Widget.qml
+@@ -124,8 +124,8 @@
+ 
+     root.gpuPercent = utilization
+     root.gpuUsage = Math.round(utilization) + "%"
+-    root.gpuTooltip = "GPU " + Math.round(utilization) + "% · VRAM " + Math.round(used)
+-      + " MiB / " + Math.round(total) + " MiB · " + Math.round(temperature) + "°C"
++    root.gpuTooltip = "VRAM " + Math.round(used) + " MiB / " + Math.round(total)
++      + " MiB · " + Math.round(temperature) + "°C"
+     root.gpuAvailable = true
+   }
+ 
+@@ -137,10 +137,18 @@
+       spacing: Style.space(2)
+ 
+       Item {
+-        width: Math.ceil(cpuText.implicitWidth)
++        width: Math.ceil(cpuWidthProbe.implicitWidth)
+         height: root.barSize
+ 
+         Text {
++          id: cpuWidthProbe
++          visible: false
++          text: "100%"
++          font.family: root.bar ? root.bar.fontFamily : Style.font.family
++          font.pixelSize: Style.font.caption
++        }
++
++        Text {
+           id: cpuText
+           text: root.cpuUsage
+           color: root.colored ? root.usageColor(root.cpuPercent) : (root.bar ? root.bar.barForeground : Color.foreground)
+@@ -166,10 +174,18 @@
+       spacing: Style.space(2)
+ 
+       Item {
+-        width: Math.ceil(ramText.implicitWidth)
++        width: Math.ceil(ramWidthProbe.implicitWidth)
+         height: root.barSize
+ 
+         Text {
++          id: ramWidthProbe
++          visible: false
++          text: "000.0GB"
++          font.family: root.bar ? root.bar.fontFamily : Style.font.family
++          font.pixelSize: Style.font.caption
++        }
++
++        Text {
+           id: ramText
+           text: root.ramUsed
+           color: root.colored ? root.usageColor(root.ramPercent) : (root.bar ? root.bar.barForeground : Color.foreground)
+@@ -196,10 +212,18 @@
+       visible: root.gpuAvailable
+ 
+       Item {
+-        width: Math.ceil(gpuText.implicitWidth)
++        width: Math.ceil(gpuWidthProbe.implicitWidth)
+         height: root.barSize
+ 
+         Text {
++          id: gpuWidthProbe
++          visible: false
++          text: "100%"
++          font.family: root.bar ? root.bar.fontFamily : Style.font.family
++          font.pixelSize: Style.font.caption
++        }
++
++        Text {
+           id: gpuText
+           text: root.gpuUsage
+           color: root.colored ? root.usageColor(root.gpuPercent) : (root.bar ? root.bar.barForeground : Color.foreground)

@@ -1,0 +1,63 @@
+--- a/Widget.qml
++++ b/Widget.qml
+@@ -12,6 +12,7 @@
+   property real cpuPercent: 0
+   property string ramUsed: ""
+   property real ramPercent: 0
++  property string ramWidthHint: "00.0GB"
+   property string gpuUsage: ""
+   property real gpuPercent: 0
+   property string gpuTooltip: ""
+@@ -101,6 +102,7 @@
+         var used = parseFloat(seg[0]) || 0
+         var total = parseFloat(seg[1]) || 0
+         root.ramPercent = total > 0 ? (used / total) * 100 : 0
++        if (total > 0) root.ramWidthHint = total.toFixed(1) + "GB"
+       }
+     }
+   }
+@@ -131,7 +133,7 @@
+ 
+   Row {
+     id: barRow
+-    spacing: Style.space(8)
++    spacing: Style.space(4)
+ 
+     Row {
+       spacing: Style.space(2)
+@@ -156,7 +158,7 @@
+           font.pixelSize: Style.font.caption
+           anchors.left: parent.left
+           anchors.right: parent.right
+-          horizontalAlignment: Text.AlignLeft
++          horizontalAlignment: Text.AlignRight
+           anchors.verticalCenter: parent.verticalCenter
+         }
+       }
+@@ -180,7 +182,7 @@
+         Text {
+           id: ramWidthProbe
+           visible: false
+-          text: "000.0GB"
++          text: root.ramWidthHint
+           font.family: root.bar ? root.bar.fontFamily : Style.font.family
+           font.pixelSize: Style.font.caption
+         }
+@@ -193,7 +195,7 @@
+           font.pixelSize: Style.font.caption
+           anchors.left: parent.left
+           anchors.right: parent.right
+-          horizontalAlignment: Text.AlignLeft
++          horizontalAlignment: Text.AlignRight
+           anchors.verticalCenter: parent.verticalCenter
+         }
+       }
+@@ -231,7 +233,7 @@
+           font.pixelSize: Style.font.caption
+           anchors.left: parent.left
+           anchors.right: parent.right
+-          horizontalAlignment: Text.AlignLeft
++          horizontalAlignment: Text.AlignRight
+           anchors.verticalCenter: parent.verticalCenter
+         }
+       }

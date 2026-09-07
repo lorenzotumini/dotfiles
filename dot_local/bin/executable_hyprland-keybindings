@@ -18,7 +18,6 @@ Window management
   Super+Ctrl+F                Tiled fullscreen
   Super+P                     Toggle pseudo window
   Super+Ctrl+J                Toggle split orientation
-  Super+Alt+L                 Toggle workspace layout
   Super+G                     Toggle window grouping
   Super+Alt+G                 Move window out of group
   Super+Alt+Tab               Next window in group
@@ -57,6 +56,7 @@ Desktop core
   Super+Ctrl+P                Power panel
   Super+Ctrl+Alt+D            Calendar panel
   Super+Ctrl+T                System activity
+  Super+Alt+Shift+L           Workspace layout panel
   Super+Ctrl+N                Toggle nightlight
   Super+Ctrl+I                Toggle idle locking
   Super+Ctrl+Z                Increase cursor zoom

@@ -84,11 +84,22 @@ launching Ghostty directly; this system therefore does not need Omarchy's
 
 `optional-plugins.txt` records reviewed optional plugins without making network
 checkouts part of `chezmoi apply`. The selected Analytics widget is installed
-at `~/.config/omarchy/plugins/analytics-omarchy` at its recorded commit. Its
-small reviewed compatibility or layout changes live under
+at `~/.config/omarchy/plugins/analytics-omarchy` and the Workspace Layout trial
+at `~/.config/omarchy/plugins/bjarneo.workspace-layout`, each at its recorded
+commit. Its small reviewed compatibility or layout changes live under
 `optional-plugin-patches/`; the Analytics patch only restores the compact
 vertical alignment of its labels and is intentionally separate from the pinned
 upstream checkout and must be reapplied after replacing or updating a plugin.
+Its NVIDIA companion patch adds utilization and used VRAM via `nvidia-smi`; it
+stays hidden when that command cannot return a valid metric.
+The following metrics-width patch reserves stable CPU, RAM, and GPU text
+widths, while the GPU tooltip reports only VRAM and temperature.
+The final pairing patch right-aligns values against their icons and derives the
+RAM reservation from installed memory, keeping the grouping compact and stable.
+Workspace Layout's generated Lua is loaded through the guarded block in the
+managed Hyprland configuration, so the plugin never appends to that file.
+Its tiny compatibility patch replaces the unsupported full-width plus glyph
+with an ordinary plus in the new-layout and new-profile controls.
 
 The managed `~/.local/bin/aether` wrapper points an optional Aether package at
 this pinned Omarchy core. Aether then generates an ordinary native user theme

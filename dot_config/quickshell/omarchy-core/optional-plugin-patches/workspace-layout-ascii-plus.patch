@@ -1,0 +1,19 @@
+diff --git a/Panel.qml b/Panel.qml
+index 26ceeb7..f3fec89 100644
+--- a/Panel.qml
++++ b/Panel.qml
+@@ -811,6 +811,6 @@ Panel {
+             PanelActionButton {
+               foreground: root.fg
+-              iconText: "＋"
++              iconText: "+"
+               tooltipText: "New layout on this workspace"
+               onClicked: root.newLayout()
+             }
+@@ -978,5 +978,5 @@ Panel {
+             PanelActionButton {
+               foreground: root.fg
+-              iconText: "＋"
++              iconText: "+"
+               tooltipText: "New profile from this one"
+               onClicked: {
