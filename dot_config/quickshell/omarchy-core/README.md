@@ -82,6 +82,34 @@ launching Ghostty directly; this system therefore does not need Omarchy's
 
 ## Optional integrations
 
+Dictation reuses the stock `Dictation` bar indicator and `omarchy-voxtype-status`
+stream, with a local settings launcher for Ghostty. Hold F9 to record and
+release to transcribe into the focused application, or toggle recording with
+Super+Ctrl+X. The microphone indicator becomes active while recording; hover
+the indicator group to access its settings action when idle.
+
+Install Voxtype separately; this desktop uses the official signed v1.0.1
+`linux-x86_64-avx2` binary at `~/.local/bin/voxtype`, verified against release
+signing key `9CCF7915B750CAE8B095ED1AA3FC9F33FD209279`. It contains the CPU
+Whisper engine without the AUR package's additional backend binaries. Updates
+are manual: download and verify a newer official release before replacing it.
+The binary is not stored in Git. Alternatively, install `voxtype-bin` with
+paru and remove the user-local binary so it cannot shadow `/usr/bin/voxtype`;
+rerun `voxtype setup systemd` to update the service's executable path.
+
+`wtype`, `wl-clipboard`, and `pipewire-alsa` provide typing, clipboard fallback,
+and microphone access. After applying
+the dotfiles, run `voxtype setup --download --no-post-install`, then
+`voxtype setup systemd` and `systemctl --user enable --now voxtype.service`.
+Reload Hyprland and restart the desktop shell to expose the new shortcuts and
+status command. No Omarchy installer or package-management command is exposed.
+
+`~/.config/voxtype/config.toml` is create-once state, initially matching
+Omarchy's English `base.en` model. Use `voxtype configure` (also available by
+clicking the bar indicator) or `voxtype setup model` to select another model
+and language, then restart `voxtype.service`. Models remain machine-local in
+`~/.local/share/voxtype`; chezmoi does not download them or install packages.
+
 `optional-plugins.txt` records reviewed optional plugins without making network
 checkouts part of `chezmoi apply`. The selected Analytics widget is installed
 at `~/.config/omarchy/plugins/analytics-omarchy` and the Workspace Layout trial

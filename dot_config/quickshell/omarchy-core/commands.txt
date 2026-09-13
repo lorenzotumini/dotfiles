@@ -24,6 +24,9 @@ omarchy-shell-config
 omarchy-toggle-bar
 omarchy-toggle
 
+# Dictation status consumed by the stock bar indicator
+omarchy-voxtype-status
+
 # Screenshot capture (the region helper is used by the screenshot command)
 omarchy-capture-region
 omarchy-capture-screenshot

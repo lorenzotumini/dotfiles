@@ -38,6 +38,7 @@
           "id": "omarchy.indicators",
           "items": [
             "NightLight",
+            "Dictation",
             "Dnd",
             "StayAwake"
           ]

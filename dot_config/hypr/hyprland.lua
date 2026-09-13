@@ -43,9 +43,14 @@ hl.env("OMARCHY_PATH", desktopCore)
 -- native capture helper (which otherwise defaults to the top-level Pictures
 -- directory).
 hl.env("OMARCHY_SCREENSHOT_DIR", home .. "/Pictures/Screenshots")
-if not string.find(":" .. sessionPath .. ":", ":" .. desktopCoreBin .. ":", 1, true) then
-    hl.env("PATH", desktopCoreBin .. ":" .. sessionPath)
+-- Include user-installed tools (such as Voxtype) in compositor-launched
+-- commands as well as terminal shells. Keep the curated core first.
+for _, directory in ipairs({ home .. "/.local/bin", desktopCoreBin }) do
+    if not string.find(":" .. sessionPath .. ":", ":" .. directory .. ":", 1, true) then
+        sessionPath = directory .. ":" .. sessionPath
+    end
 end
+hl.env("PATH", sessionPath)
 
 hl.config({
     -- Let XWayland applications render at native pixels. Applications that
@@ -237,6 +242,11 @@ bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }), "Next work
 bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }), "Previous workspace")
 bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), "Move window", { mouse = true })
 bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), "Resize window", { mouse = true })
+
+-- Dictation follows Omarchy's shortcuts; microphone access stays in Voxtype.
+bind(mainMod .. " + CTRL + X", hl.dsp.exec_cmd("voxtype record toggle"), "Toggle dictation")
+bind("F9", hl.dsp.exec_cmd("voxtype record start"), "Start dictation (push-to-talk)")
+bind("F9", hl.dsp.exec_cmd("voxtype record stop"), "Stop dictation (push-to-talk)", { release = true })
 
 -- Audio and media keys work even while the session is locked.
 bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("omarchy-audio-output-volume raise"), "Raise volume", { locked = true, repeating = true })

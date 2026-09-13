@@ -1,0 +1,5 @@
+#!/bin/bash
+set -euo pipefail
+
+# Keep the stock indicator's settings action using our existing terminal adapter.
+exec omarchy-launch-tui voxtype configure
