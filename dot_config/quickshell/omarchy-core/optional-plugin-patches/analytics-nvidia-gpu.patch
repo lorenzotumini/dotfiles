@@ -41,7 +41,7 @@
 +  Process {
 +    id: gpuProc
 +    running: false
-+    command: ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu", "--format=csv,noheader,nounits"]
++    command: ["omarchy-primary-gpu-stats"]
 +    stdout: StdioCollector {
 +      waitForEnd: true
 +      onStreamFinished: root.parseGpuStats(text)

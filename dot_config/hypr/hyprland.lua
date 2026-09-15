@@ -26,6 +26,10 @@ hl.on("hyprland.start", function ()
     -- The desktop initializer starts the single supported Omarchy-derived core
     -- and reconnects its generated theme/application state.
     hl.exec_cmd(home .. "/.local/bin/desktop-shell boot")
+    -- greetd starts Hyprland directly, so graphical-session.target is not
+    -- activated and cannot pull in Voxtype despite its enabled user service.
+    -- Start it here, after the compositor environment has been imported.
+    hl.exec_cmd("systemctl --user is-enabled --quiet voxtype.service && systemctl --user start voxtype.service")
     -- Launch MegaSync through UWSM after the Quickshell tray host is ready.
     -- Its XDG autostart entry is disabled for Hyprland below because this
     -- session does not activate xdg-desktop-autostart.target.

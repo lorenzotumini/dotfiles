@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euo pipefail
+
+# Omarchy's pinned collector still uses Codex's removed `-a untrusted` value.
+# Translate that one invocation to the current noninteractive equivalent while
+# keeping the collector itself in the unmodified vendor snapshot.
+collector=$HOME/.config/quickshell/omarchy-stock/bin/omarchy-agent-usage-codex
+[[ -r $collector ]] || {
+  echo "omarchy-agent-usage-codex: vendor collector not found" >&2
+  exit 1
+}
+
+sed 's/"-a", "untrusted"/"-a", "never"/' "$collector" | /usr/bin/python3 - "$@"

@@ -11,7 +11,10 @@ The core exposes only:
 - local adapters explicitly listed in `local-commands.txt`.
 
 The Omarchy installer, package manager, migrations, application catalog, menu,
-agents, and operating-system integration are not on the runtime `PATH`.
+agent launcher, and operating-system integration are not on the runtime `PATH`.
+The read-only agent-usage updater is exposed for the agents bar panel.
+The local Codex collector adapter translates the pinned collector's removed
+`-a untrusted` invocation to Codex's current `-a never` policy.
 Desktop commands are exposed directly as `omarchy-theme-*`, `omarchy-bar`,
 `omarchy-font-*`, and their other allowlisted names. A local `omarchy` facade
 exists only for the small theme and shell-plugin command set expected by native
@@ -23,9 +26,9 @@ update, migration, and system-management route.
 `~/.config/omarchy/shell.json` is the user policy. Chezmoi creates it only when
 it is absent, so changes made through bar/widget controls survive later applies.
 The copy under `config/omarchy/` is the canonical safe fallback used when the
-user file is invalid. The menu, updater, agents, reminder, clipboard, emoji,
+user file is invalid. The menu, updater, reminder, clipboard, emoji,
 developer gallery, and benchmark plugins are omitted or disabled. The stock
-bar, workspaces, tray, audio, Bluetooth, network, monitor, power, weather,
+bar, workspaces, agents usage panel, tray, audio, Bluetooth, network, monitor, power, weather,
 lock, notification, OSD, idle, background, media, night-light, battery,
 Polkit, Wi-Fi QR, and image picker components remain upstream code.
 

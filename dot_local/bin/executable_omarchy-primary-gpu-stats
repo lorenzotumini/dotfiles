@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+
+# Keep the bar on the same RTX 5060 Ti selected for Hyprland in ~/.profile.
+# DRM card numbers are dynamic, so identify the GPU through sysfs instead.
+selected_device=""
+for drm_card in /sys/class/drm/card[0-9]*; do
+  [[ -r "$drm_card/device/vendor" && -r "$drm_card/device/device" ]] || continue
+  read -r vendor < "$drm_card/device/vendor"
+  read -r device < "$drm_card/device/device"
+  if [[ $vendor == 0x10de && $device == 0x2d04 ]]; then
+    selected_device=$(basename "$(readlink -f "$drm_card/device")")
+    break
+  fi
+done
+
+[[ -n $selected_device ]] || {
+  echo "omarchy-primary-gpu-stats: RTX 5060 Ti DRM device not found" >&2
+  exit 1
+}
+
+exec nvidia-smi --id="$selected_device" \
+  --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu \
+  --format=csv,noheader,nounits
