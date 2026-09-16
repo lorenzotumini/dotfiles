@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Lean Pi: core tools, safety/Herdr hooks, manual subagents, no skill discovery.
+# Shares normal Pi settings/authentication and preserves project instructions.
+# Examples:
+#   pi-lean --model '<model-id>'
+#   pi-lean --skill "$HOME/.pi/agent/skills/pdf-reader/SKILL.md"
+export PI_SUBAGENTS_DEFAULT=off
+exec pi \
+  --no-extensions \
+  -e "$HOME/.pi/agent/extensions/bash-guard/index.ts" \
+  -e "$HOME/.pi/agent/extensions/herdr-agent-state.ts" \
+  -e "$HOME/.pi/agent/extensions/interactive-subagents/index.ts" \
+  --tools read,bash,edit,write,subagent,subagent_message,subagents_list \
+  --no-skills \
+  "$@"

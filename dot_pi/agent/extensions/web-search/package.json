@@ -1,0 +1,7 @@
+{
+  "name": "pi-web-search-exa",
+  "private": true,
+  "type": "module",
+  "pi": { "extensions": ["./index.ts"] },
+  "scripts": { "test": "node tests/smoke.mjs" }
+}

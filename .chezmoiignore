@@ -16,6 +16,13 @@ README.md
 
 # OS-specific config trees
 {{ if eq .chezmoi.os "windows" }}
+# Pi integrations that depend on Herdr/Linux process and shell behavior.
+.pi/agent/extensions/herdr-agent-state.ts
+.pi/agent/extensions/interactive-subagents/**
+.pi/agent/extensions/observational-memory/**
+.pi/agent/optional/interactive-subagents/**
+.pi/agent/optional/observational-memory/**
+.local/bin/pi-lean
 .config/alacritty/**
 .config/autostart/**
 .config/btop/**
