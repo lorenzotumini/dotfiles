@@ -1,12 +1,14 @@
 # Ignore generated or volatile files
 README.md
+tests/**
 .local/state
 .local/state/**
 .local/share/aether/**
 .config/aether/**
 .config/fontconfig/conf.d/99-desktop-core-font.conf
 .config/omarchy/backgrounds/**
-.config/omarchy/plugins/**
+.config/omarchy/plugins/analytics-omarchy/**
+.config/omarchy/plugins/bjarneo.workspace-layout/**
 .config/omarchy/shell.toml
 .config/omarchy/themes/**
 .config/nvim/lazy-lock.json

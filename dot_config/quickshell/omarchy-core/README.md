@@ -3,6 +3,100 @@
 This directory is the local integration boundary around the pinned, unmodified
 Omarchy snapshot in `../omarchy-stock`.
 
+## Maintenance and updates
+
+The desktop snapshot is pinned in `upstream.json`. `omarchy version` reports
+that pin as `4.0.1-local (commit)`; the stock `version` file is preserved even
+when upstream leaves an older alpha label in it. System packages (including
+Hyprland and Quickshell) still use the machine's normal Arch package workflow.
+`chezmoi update` pulls this dotfiles repository, not new Omarchy releases.
+
+```sh
+omarchy-status                         # local versions, pins, patch drift
+omarchy-status --online                # also query latest release/plugin tips
+desktop-core-maintain check            # offline static preflight
+desktop-core-maintain migrate --dry-run
+desktop-core-maintain stage v4.0.4      # prepare an upstream review directory
+desktop-core-maintain stage-plugin analytics-omarchy <commit>
+```
+
+Online checks do not fetch into installed repositories. Patch verification
+reconstructs each installed plugin's HEAD in a temporary directory, replays
+the recorded patches in order, and compares the result with the installed
+files. It distinguishes expected patches from additional local edits. An
+upstream default-branch tip differing from the pin is a review prompt, not
+proof that the new revision is compatible or a released version.
+
+Staging requires an explicit ref and writes only into a new review directory
+(under `/tmp` by default; use `--output <new-directory>` to keep it elsewhere).
+No upstream code, installer, migration or plugin is executed. A vendor review
+includes `changes.txt`, `changes.diff`, `compatibility.txt`, `review.json`, a
+normal `vendor/` tree, and a chezmoi-encoded `source/` tree with the candidate
+pin. Failed static checks return a nonzero exit code and leave the candidate
+available for inspection. A failed patch replay likewise leaves the checkout
+for resolving the conflict without altering the installed plugin.
+
+To adopt a reviewed vendor candidate, replace the source repository's
+`dot_config/quickshell/omarchy-stock` tree with the staged counterpart, including
+removing files listed as deleted, and copy the staged `upstream.json`. Review
+the integration adapters, new command dependencies, relevant upstream
+migrations, and separate DNS/PAM system files before deployment. Run the
+source preflight below and `chezmoi diff`, then apply the scoped desktop files
+and restart the shell while unlocked. Do not run the distribution's updater
+or migration chain. Keep the previous source revision and any machine-state
+backups until the running desktop has been tested.
+
+For a plugin update, `stage-plugin` fetches the explicit candidate ref and
+reapplies the recorded patch series to a fresh checkout. Compare its
+`changes.diff` against the installed plugin, preserve any unrecorded edits,
+and resolve patch conflicts before adopting it. On adoption, update the pin
+in `optional-plugins.txt` together with any revised patches, and install the
+patched candidate from `plugins/<id>/`, including its `.git` directory.
+That candidate is an independent Git checkout with the patches applied.
+Run `omarchy-status`
+afterward to verify the installed commit and patched content match the record.
+
+`check` validates allowlisted commands, plugin entry-point files, configured
+widget IDs, local QML imports, the properties used by the tray wrapper, and
+recorded patches against installed plugin commits. Patch conflicts fail;
+unrecorded local changes or commit drift produce warnings for review.
+`desktop-shell restart` runs it before stopping the working shell. These are
+static checks: they do not validate Qt APIs, run third-party code, or prove
+that authentication, IPC, and visual behavior work. Test those in the actual
+session after an approved refresh.
+
+For development before deploying the tooling:
+
+```sh
+python3 dot_config/quickshell/omarchy-core/maintenance.py --source . check
+python3 dot_config/quickshell/omarchy-core/maintenance.py --source . status
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
+```
+
+### Local layout migrations
+
+`layout-migrations.json` is an ordered, append-only list. Its version is
+independent of Omarchy's `shell.json` schema version. The first migration
+adopts the existing layout without replaying historical widget additions;
+new machines already receive those additions in the create-once seed. This
+preserves deliberate widget removals and other interactive choices.
+
+Future migrations can use `rename-plugin` (`from`, `to`), `add-widget`
+(`section`, `widget`), or `add-indicator` (`item`, for an existing indicator
+group). Add one contiguous version per change; do not rewrite old entries.
+These operations are idempotent, preserve unrelated settings, and run once
+according to `~/.local/state/desktop-core/layout-migrations.json`. Later user
+changes are therefore not continually reset. Backups for actual layout edits
+are written to `~/.local/state/desktop-core/layout-backups/`. Restore a matching
+layout backup and migration ledger version together when rolling back.
+
+The local after-apply hook runs pending migrations, checks the desktop, and
+rebuilds the command symlinks using `desktop-core-init --commands-only`.
+It does not restart the shell or resynchronize themes. Migrations use a local
+lock and check for concurrent edits before replacing the layout; avoid editing
+bar settings during an apply. If the shell's schema changes upstream, extend
+this runner explicitly before deploying that release.
+
 The core exposes only:
 
 - the upstream Quickshell host and desktop plugins;

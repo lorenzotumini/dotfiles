@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
+if [[ $# -gt 1 || ($# -eq 1 && $1 != --commands-only) ]]; then
+  echo "Usage: desktop-core-init [--commands-only]" >&2
+  exit 2
+fi
+
 core_path=${OMARCHY_PATH:-$HOME/.config/quickshell/omarchy-core}
 vendor_path=$HOME/.config/quickshell/omarchy-stock
 state_dir=$HOME/.local/state/desktop-core
@@ -58,6 +63,8 @@ mv "$new_bin" "$runtime_bin"
 new_bin=""
 [[ -n $old_bin ]] && rm -rf "$old_bin"
 old_bin=""
+
+[[ ${1:-} == --commands-only ]] && exit 0
 
 PATH="$core_path/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin" \
   "$HOME/.local/bin/omarchy-font-set" --sync

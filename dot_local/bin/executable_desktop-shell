@@ -52,6 +52,8 @@ case ${1:-status} in
     exit 2
     ;;
   restart)
+    # Check before systemd stops the working shell. No network or layout writes.
+    "$HOME/.local/bin/desktop-core-maintain" check || exit 1
     if systemctl --user is-active --quiet "$core_unit"; then
       systemctl --user restart "$core_unit"
     else

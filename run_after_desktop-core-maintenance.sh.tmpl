@@ -1,0 +1,8 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+set -euo pipefail
+# The ledger makes this safe on every apply, including after future migrations.
+"$HOME/.local/bin/desktop-core-maintain" migrate
+"$HOME/.local/bin/desktop-core-maintain" check
+"$HOME/.local/bin/desktop-core-init" --commands-only
+{{- end }}

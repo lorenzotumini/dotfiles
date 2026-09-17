@@ -6,3 +6,4 @@ omarchy-launch-tui
 omarchy-primary-gpu-stats
 omarchy-restart-shell
 omarchy-voxtype-config
+omarchy-version

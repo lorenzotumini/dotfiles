@@ -70,3 +70,12 @@ chezmoi update
 
 If a target file was edited directly, use `chezmoi re-add <target>` before
 committing to copy that change back into the source state.
+
+## Linux desktop maintenance
+
+The Omarchy desktop is a pinned, locally integrated snapshot. Use
+`omarchy-status` for local versions and plugin drift, or `omarchy-status
+--online` to also check upstream. `desktop-core-maintain stage <release-tag>`
+prepares a review directory without updating the installed desktop.
+See [desktop maintenance](dot_config/quickshell/omarchy-core/README.md) for
+preflight checks, staged vendor/plugin updates, and local layout migrations.

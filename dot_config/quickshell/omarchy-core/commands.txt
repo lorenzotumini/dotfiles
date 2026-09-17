@@ -137,9 +137,6 @@ omarchy-launch-editor
 omarchy-launch-or-focus
 omarchy-launch-or-focus-tui
 
-# Compatibility/version probe used by native-theme tools such as Aether
-omarchy-version
-
 # Theme hot-reload hooks
 omarchy-restart-btop
 omarchy-restart-helix
