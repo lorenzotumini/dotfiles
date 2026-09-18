@@ -18,6 +18,44 @@
             "thinkingFormat": "qwen-chat-template",
             "thinkingTokenBudgetField": "thinking_budget_tokens"
           }
+        },
+		"qwen3.8-27b-q4": {
+          "reasoning": true,
+          "contextWindow": 131072,
+          "maxTokens": 16384,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": null,
+            "xhigh": "xhigh",
+            "max": null
+          },
+          "compat": {
+            "supportsDeveloperRole": false,
+            "supportsReasoningEffort": true,
+            "thinkingTokenBudgetField": "thinking_budget_tokens"
+          }
+        },
+        "qwen3.8-27b-gsq": {
+          "reasoning": true,
+          "contextWindow": 131072,
+          "maxTokens": 16384,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": null,
+            "xhigh": "xhigh",
+            "max": null
+          },
+          "compat": {
+            "supportsDeveloperRole": false,
+            "supportsReasoningEffort": true,
+            "thinkingTokenBudgetField": "thinking_budget_tokens"
+          }
         }
       }
     }
