@@ -24,9 +24,6 @@ both systems. Windows also creates the junction
 `~/AppData/Local/nvim -> ~/.config/nvim`, allowing Neovim to use its native path
 without maintaining a second configuration copy.
 
-Sioyek is stored once under `dot_config/sioyek`. Windows copies it to Sioyek's
-required `C:\ProgramData\sioyek` location after apply; Linux uses it directly.
-
 ## First initialization
 
 Install Git and chezmoi first. Windows also needs PowerShell 7 (`pwsh`) before
@@ -43,10 +40,6 @@ Review the diff before the first apply, especially on a machine with existing
 configuration. On Windows, the Neovim hook deliberately stops if
 `~/AppData/Local/nvim` is an existing real directory: preserve or import its
 contents before replacing it with the managed junction.
-
-The Linux GitHub SSH rule expects a machine-local `~/.ssh/id_ed25519_github`
-key. Generate and register that key separately; private keys are never managed
-by chezmoi.
 
 ## Workflow
 
