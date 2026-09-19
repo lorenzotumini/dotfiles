@@ -559,10 +559,28 @@ export default function browserExtension(pi: ExtensionAPI) {
 
   pi.registerCommand("browser", {
     description:
-      "Browser tools: '/browser on' to enable, '/browser off' to disable + close, bare '/browser' for status",
+      "Browser tools: bare '/browser' toggles, '/browser on' to enable, '/browser off' to disable + close, '/browser status' for status",
     handler: async (args, ctx) => {
       const cmd = (args || "").trim().toLowerCase();
-      if (cmd === "on" || cmd === "enable") {
+      if (cmd === "status") {
+        const toolState = enabled ? "enabled" : "disabled (run /browser on)";
+        const procState =
+          page && !page.isClosed() ? `, open at ${safeUrl(page.url())}` : "";
+        ctx.ui.notify(`browser tools: ${toolState}${procState}`, "info");
+        return;
+      }
+      const action =
+        cmd === "" ? (enabled ? "off" : "on")
+        : ["on", "enable"].includes(cmd)
+          ? "on"
+          : ["off", "disable", "close", "kill"].includes(cmd)
+            ? "off"
+            : null;
+      if (action === null) {
+        ctx.ui.notify("Usage: /browser [on|off|status]", "warning");
+        return;
+      }
+      if (action === "on") {
         if (enabled) {
           ctx.ui.notify("browser tools already enabled", "info");
           return;
@@ -571,20 +589,12 @@ export default function browserExtension(pi: ExtensionAPI) {
         ctx.ui.notify("browser tools enabled", "info");
         return;
       }
-      if (cmd === "off" || cmd === "disable" || cmd === "close" || cmd === "kill") {
-        const wasRunning = !!(page && !page.isClosed());
-        await disable();
-        ctx.ui.notify(
-          wasRunning ? "browser tools disabled, browser closed" : "browser tools disabled",
-          "info",
-        );
-        return;
-      }
-      // Bare /browser — status.
-      const toolState = enabled ? "enabled" : "disabled (run /browser on)";
-      const procState =
-        page && !page.isClosed() ? `, open at ${safeUrl(page.url())}` : "";
-      ctx.ui.notify(`browser tools: ${toolState}${procState}`, "info");
+      const wasRunning = !!(page && !page.isClosed());
+      await disable();
+      ctx.ui.notify(
+        wasRunning ? "browser tools disabled, browser closed" : "browser tools disabled",
+        "info",
+      );
     },
   });
 

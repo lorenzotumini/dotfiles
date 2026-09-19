@@ -12,6 +12,7 @@ loads this implementation. The three subagent tools are active by default inside
 Herdr and hidden outside it. `pi-lean` loads the same entry, but starts them off:
 
 ```text
+/subagents        # toggle
 /subagents on
 /subagents status
 /subagents off
@@ -24,10 +25,10 @@ and associated tool instructions, not past results already in conversation histo
 Choose the parent model using `/model`, then try:
 
 ```text
-/subagent trial-scout Map the main source directories and test entry points. Return a short report without modifying anything or inspecting credentials.
+/subagents:spawn trial-scout Map the main source directories and test entry points. Return a short report without modifying anything or inspecting credentials.
 ```
 
-`/subagent` asks the parent to call the tool. The scout opens on the right with a
+`/subagents:spawn` asks the parent to call the tool. The scout opens on the right with a
 vertical divider and no requested focus change. The final report returns
 asynchronously; its pane closes on completion. Ask the parent to follow up by the
 scout's display name using `subagent_message`. A finished child is resumed by name

@@ -19,9 +19,10 @@ In Pi:
 
 ```
 /reload
+/browser          # toggle (enable, or disable + close)
 /browser on       # enable all eight tools
-/browser          # status
 /browser off      # disable + close Chromium, clear buffers
+/browser status   # status
 ```
 
 `on`/`enable` and `off`/`disable`/`close`/`kill` are accepted. The enable bit is

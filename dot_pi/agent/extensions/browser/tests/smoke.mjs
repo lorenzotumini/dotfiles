@@ -187,7 +187,10 @@ try {
   await command('off');
   assert.deepEqual(active, ['read']);
   await command('');
-  assert.match(messages.at(-1), /disabled/);
+  assert.match(messages.at(-1), /enabled/);
+  assert.deepEqual([...active].sort(), ['read', ...toolNames].sort());
+  await command('off');
+  assert.deepEqual(active, ['read']);
   branch = [];
   await start();
   assert.deepEqual(active, ['read']);

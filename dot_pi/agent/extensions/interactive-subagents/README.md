@@ -6,6 +6,7 @@ active by default. Outside Herdr they stay hidden and cannot create panes.
 `pi-lean` explicitly loads this extension but defaults its tools off. Use:
 
 ```text
+/subagents        # toggle
 /subagents on
 /subagents status
 /subagents off
@@ -18,7 +19,7 @@ available. Wait for the scout to finish before disabling or reloading.
 Try inside Herdr:
 
 ```text
-/subagent trial-scout Map the source directories and test entry points. Do not modify anything.
+/subagents:spawn trial-scout Map the source directories and test entry points. Do not modify anything.
 ```
 
 The proven trial limits remain: one read-only scout at a time, no nested spawning,

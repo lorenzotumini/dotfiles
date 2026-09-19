@@ -2384,13 +2384,13 @@ export default function subagentsExtension(pi: ExtensionAPI) {
       },
     });
 
-  // /subagent command — spawn a subagent by name
-  pi.registerCommand("subagent", {
-    description: "Spawn a subagent: /subagent <agent> <task>",
+  // /subagents:spawn command — spawn a subagent by name
+  pi.registerCommand("subagents:spawn", {
+    description: "Spawn a subagent: /subagents:spawn <agent> <task>",
     handler: async (args, ctx) => {
       const trimmed = args.trim();
       if (!trimmed) {
-        ctx.ui.notify("Usage: /subagent <agent> [task]", "warning");
+        ctx.ui.notify("Usage: /subagents:spawn <agent> [task]", "warning");
         return;
       }
 

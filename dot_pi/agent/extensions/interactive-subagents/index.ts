@@ -30,7 +30,7 @@ export default function integratedSubagents(pi: ExtensionAPI) {
     setEnabled(want);
   }
   // Guard executions as well as visibility: being registered must not allow
-  // disabled tools to create panes or inject a /subagent prompt.
+  // disabled tools to create panes or inject a /subagents:spawn prompt.
   subagents(new Proxy(pi, {
     get(target, key) {
       if (key === 'registerTool') return (tool: any) => pi.registerTool({
@@ -57,24 +57,26 @@ export default function integratedSubagents(pi: ExtensionAPI) {
   pi.on('session_tree', (_event, ctx) => restore(ctx));
   pi.on('session_shutdown', () => { enabled = false; });
   pi.registerCommand('subagents', {
-    description: 'Herdr read-only scout: /subagents on|off|status (normal Pi: on; lean: off)',
+    description: 'Herdr read-only scout: bare /subagents toggles; /subagents on|off|status (normal Pi: on; lean: off)',
     handler: async (args, ctx) => {
-      const action = args.trim().toLowerCase() || 'status';
+      const raw = args.trim().toLowerCase();
       const notify = (text: string, kind: 'info' | 'warning' = 'info') => { if (ctx.hasUI) ctx.ui.notify(text, kind); };
-      if (action === 'status') {
+      if (raw === 'status') {
         notify(`Subagents: ${enabled ? 'on' : 'off'} (${profile} profile). ${insideHerdr() ? 'Herdr context available.' : 'Requires a Herdr-managed pane; no plain-terminal fallback.'}`);
         return;
       }
-      if (!['on', 'off'].includes(action)) { notify('Usage: /subagents on|off|status', 'warning'); return; }
-      if (action === 'on' && !available()) {
+      if (raw !== '' && !['on', 'off'].includes(raw)) { notify('Usage: /subagents [on|off|status]', 'warning'); return; }
+      const want = raw === '' ? !enabled : raw === 'on';
+      if (want === enabled) { notify(`Subagents already ${want ? 'on' : 'off'}.`, 'info'); return; }
+      if (want && !available()) {
         notify('Cannot enable subagents: run inside Herdr and allow all three subagent tools in your CLI tool selection.', 'warning');
         return;
       }
-      if (action === 'off' && getRunningSubagentCount() > 0) {
+      if (!want && getRunningSubagentCount() > 0) {
         notify('Wait for the current scout to finish before disabling subagents.', 'warning');
         return;
       }
-      setEnabled(action === 'on');
+      setEnabled(want);
       pi.appendEntry(ENTRY, { profile, on: enabled });
       notify(`Subagents ${enabled ? 'on' : 'off'}.`);
     },

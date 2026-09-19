@@ -1788,13 +1788,13 @@ describe("tmux.ts interpretExitSidecar", () => {
   });
 });
 describe("commands", () => {
-  it("/subagent emits a spawn tool call for a known agent", () => {
+  it("/subagents:spawn emits a spawn tool call for a known agent", () => {
     const { api, registeredCommands, sentUserMessages } = createMockExtensionApi();
 
     (subagentsModule as any).default(api);
 
-    const subagent = registeredCommands.find((command) => command.name === "subagent");
-    assert.ok(subagent, "expected /subagent to be registered");
+    const subagent = registeredCommands.find((command) => command.name === "subagents:spawn");
+    assert.ok(subagent, "expected /subagents:spawn to be registered");
 
     subagent.handler("scout map the auth code", {
       ui: { notify() {} },
