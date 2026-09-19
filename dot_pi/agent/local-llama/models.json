@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "server": {
+    "binary": "llama-server",
+    "host": "127.0.0.1",
+    "port": 8080,
+    "apiKeyFile": "~/.config/llama/api-key",
+    "cacheDirectory": "~/.cache/pi-local-llama",
+    "loadTimeoutMs": 300000
+  },
+  "runtimeDefaults": {
+    "n-gpu-layers": "all",
+    "flash-attn": "on",
+    "threads": 8,
+    "parallel": 1,
+    "jinja": true,
+    "reasoning": "auto",
+    "fit": "off"
+  },
+  "policies": {
+    "qwen35": {
+      "thinking": "toggle",
+      "preserveThinking": false,
+      "levels": { "off": "none", "low": "low", "medium": "medium", "high": "high" },
+      "budgets": { "low": 512, "medium": 2048, "high": 6144 },
+      "sampling": {
+        "off": { "temperature": 0.7, "top_p": 0.8, "top_k": 20, "min_p": 0, "presence_penalty": 1.5, "repeat_penalty": 1 },
+        "on": { "temperature": 0.6, "top_p": 0.95, "top_k": 20, "min_p": 0, "presence_penalty": 0, "repeat_penalty": 1 }
+      }
+    },
+    "qwen38": {
+      "thinking": "effort",
+      "preserveThinking": true,
+      "levels": { "off": "none", "low": "low", "medium": "medium", "xhigh": "xhigh" },
+      "budgets": { "low": 2048, "medium": 8192, "xhigh": 24576 },
+      "sampling": {
+        "off": { "temperature": 0.7, "top_p": 0.8, "top_k": 20, "min_p": 0, "presence_penalty": 1.5, "repeat_penalty": 1 },
+        "on": { "temperature": 1, "top_p": 0.95, "top_k": 20, "min_p": 0, "presence_penalty": 0, "repeat_penalty": 1 }
+      }
+    }
+  },
+  "models": {
+    "qwen35-4b": {
+      "path": "/mnt/shared/AI/models/llama.cpp/qwen3.5-4b/Qwen3.5-4B-UD-Q4_K_XL.gguf",
+      "projector": "/mnt/shared/AI/models/llama.cpp/qwen3.5-4b/mmproj-BF16.gguf",
+      "policy": "qwen35"
+    },
+    "qwen38-gsq": {
+      "path": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp.gguf",
+      "projector": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/mmproj-Qwen3.8-27B-BF16.gguf",
+      "policy": "qwen38",
+      "embeddedMtp": true,
+      "source": { "repo": "ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF", "revision": "d562806dbafae37109975e970aae91b43e73b440" }
+    },
+    "qwen38-q4": {
+      "path": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/Qwen3.8-27B-UD-Q4_K_M.gguf",
+      "projector": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/mmproj-Qwen3.8-27B-BF16.gguf",
+      "policy": "qwen38",
+      "embeddedMtp": true,
+      "source": { "repo": "unsloth/Qwen3.8-27B-GGUF", "revision": "4ca720788d1e01f1bff70c033e0d0028fd02e502" }
+    },
+    "qwen38-orca": {
+      "path": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/Qwen3.8-27B-Uncensored-Q4_K_M.gguf",
+      "projector": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/mmproj-Qwen3.8-27B-Uncensored-f16.gguf",
+      "policy": "qwen38",
+      "source": { "repo": "orcarouter/Qwen3.8-27B-Uncensored-GGUF" }
+    }
+  },
+  "profiles": [
+    {
+      "id": "qwen3.5-4b", "name": "Fast · Qwen3.5 4B · 32K", "model": "qwen35-4b",
+      "context": 32768, "maxOutput": 8192, "defaultThinking": "off", "vision": true,
+      "runtime": { "device": "CUDA0", "split-mode": "none", "cache-type-k": "q8_0", "cache-type-v": "q8_0" }
+    },
+    {
+      "id": "qwen3.8-27b-gsq", "name": "General / code · Qwen3.8 GSQ · 64K", "model": "qwen38-gsq",
+      "context": 65536, "maxOutput": 32768, "defaultThinking": "medium", "vision": true,
+      "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3 }
+    },
+    {
+      "id": "qwen3.8-27b-q4", "name": "Qwen3.8 Unsloth Q4 · 64K", "model": "qwen38-q4",
+      "context": 65536, "maxOutput": 32768, "defaultThinking": "medium", "vision": true,
+      "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3 }
+    },
+    {
+      "id": "qwen3.8-27b-gsq-long", "name": "Long context · Qwen3.8 GSQ · 128K", "model": "qwen38-gsq",
+      "context": 131072, "maxOutput": 32768, "defaultThinking": "medium", "vision": true,
+      "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q4_0", "cache-type-v": "q4_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3 }
+    },
+    {
+      "id": "qwen3.8-27b-orca", "name": "Unrestricted · OrcaRouter Qwen3.8 · 64K", "model": "qwen38-orca",
+      "context": 65536, "maxOutput": 32768, "defaultThinking": "off", "vision": true,
+      "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "none" }
+    }
+  ]
+}

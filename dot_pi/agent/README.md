@@ -27,3 +27,12 @@ keeps it off until `/subagents on`. Observational memory is normal-Pi-only and
 remains off until `/om on`.
 
 After applying or changing extensions, restart Pi or use `/reload` as appropriate.
+
+## Local llama.cpp
+
+Use `/local` to start the local router if needed, load a configured profile, and
+select it in Pi. Model/runtime/thinking settings live in
+[`local-llama/models.json`](local-llama/models.json); see the
+[setup and maintenance guide](local-llama/README.md). Generated files stay in
+`~/.cache/pi-local-llama/`, weights stay on the SSD, and the API key stays outside
+chezmoi.

@@ -1,6 +1,6 @@
 {
   "lastChangelogVersion": "0.85.1",
-  "theme": "dark",
+  "theme": "omarchy-system",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
   "packages": []
