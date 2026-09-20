@@ -8,9 +8,9 @@ export default function (pi: ExtensionAPI) {
 		name: "web_search",
 		label: "Web Search",
 		description:
-			"Search via Exa's free hosted endpoint (no API key; rate limited). Returns source URLs, titles and excerpts. Output capped at 16 KiB / 400 lines, with no hidden full copy. exactPhrases, excludeTerms and site compose query hints, not guaranteed strict filters: verify returned sources. Queries go to Exa; do not include secrets.",
+			"Search via Exa's free hosted endpoint (no API key; rate limited). Returns source URLs, titles and excerpts. Output capped at 16 KiB / 400 lines, with recoverable full output saved locally when truncated (24h / 128 MiB retention). exactPhrases, excludeTerms and site compose query hints, not guaranteed strict filters: verify returned sources. Queries go to Exa; do not include secrets.",
 		promptSnippet:
-			"Search the web with Exa free search. Use web_fetch to read selected source URLs; browser tools are for interactive pages.",
+			"Search the web with Exa free search. Use web_fetch to read selected source URLs; web_fetch mode=render handles JS pages locally.",
 		promptGuidelines: [
 			"Use one web_search call per search angle. Use exactPhrases for quoted query hints; verify matches because Exa is not Google's query engine.",
 			"Keep web_search queries free of secrets. Respect rate-limit errors; do not retry in a loop. Fetch only relevant URLs rather than collecting large excerpts.",
@@ -24,7 +24,12 @@ export default function (pi: ExtensionAPI) {
 				maxItems: 10, description: "Excluded term/phrase hints; verify results rather than assuming strict filtering.",
 			})),
 			site: Type.Optional(Type.String({ maxLength: 2048, description: "Domain or HTTP(S) URL used as a site: query hint; verify returned domains." })),
-			count: Type.Optional(Type.Integer({ minimum: 1, maximum: 10, description: "Requested number of results (default 5); actual count may differ." })),
+			includeDomains: Type.Optional(Type.Array(Type.String({ maxLength: 253 }), { maxItems: 10, description: "Provider domain filter; domain names only. Verify returned sources." })),
+            excludeDomains: Type.Optional(Type.Array(Type.String({ maxLength: 253 }), { maxItems: 10 })),
+            startPublishedDate: Type.Optional(Type.String({ description: "Published from YYYY-MM-DD; source dates may be unavailable." })),
+            endPublishedDate: Type.Optional(Type.String({ description: "Published until YYYY-MM-DD." })),
+            maxAgeHours: Type.Optional(Type.Integer({ minimum: 0, maximum: 8760, description: "Max cached-content age; 0 requests fresh retrieval, not recently published results." })),
+            count: Type.Optional(Type.Integer({ minimum: 1, maximum: 10, description: "Requested number of results (default 5); actual count may differ." })),
 		}),
 		async execute(_id, params, signal) {
 			return search(params, signal);

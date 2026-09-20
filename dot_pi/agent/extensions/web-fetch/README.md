@@ -1,63 +1,54 @@
 # web-fetch
 
-Fetch HTTP(S) pages as markdown using Readability/Turndown, with plain-text,
-PDF and Next.js RSC extraction paths. **External Jina Reader fallback is OFF
-by default.** Missing or false `allowJina` means failed/incomplete extraction
-never forwards the URL to Jina. Useful short extracts are returned with an
-incomplete-extraction warning; otherwise the tool reports the local failure.
+`web_fetch({url})` reads HTTP(S) HTML, PDF or text. Extraction runs locally;
+requests still reach the site and its redirects. No debug cookies are attached.
 
-`allowJina: true` explicitly permits fallback for that call only, after local
-extraction fails/is incomplete. It sends the full requested URL to Jina. The
-agent is instructed to obtain explicit user authorization, and not to enable
-this for private, confidential or signed URLs. Success locally never contacts
-Jina, even with opt-in. Oversize/unsupported responses also never use fallback.
+- `mode: "readable"` (default): Readability plus a local DOM/RSC fallback;
+  relative links use the final URL or HTML base. Tables/code are preserved;
+  complex tables keep HTML. Suspected challenge/login pages report errors.
+  Useful short documents succeed without a length-based warning.
+- `mode: "raw"`: original decoded text/HTML for inspecting extraction omissions.
+- `mode: "render"`: fresh unauthenticated local Chromium, independent of the
+  interactive debug profile. Scripts/XHR execute; images/media/fonts are blocked.
+  A bounded one-second settling window covers common SPAs, not every delayed app.
+  Requires the sibling browser extension's installed Playwright/Chromium.
+- `pages: "7-10,15"`: physical PDF page selection; first 20 by default, maximum
+  100 per call. Originals are retained locally for the PDF skill. Returned text
+  includes physical indices, PDF labels when present, and empty-text warnings.
+  `sourceTruncated` reports unextracted pages separately from output truncation.
 
-The default still contacts the requested website and follows its redirects;
-“local extraction” means parsing on your machine, not offline/no networking.
+HTML/PDF parsing runs in a disposable worker (15-second deadline, 256 MiB JS
+heap ceiling). Cancellation terminates the worker, including CPU-bound work.
+PDF extraction is basic text: use the local PDF skill and page images to check
+multi-column order, equations, tables and scans.
 
-## Context protection
+`allowJina: true` permits external Jina Reader fallback after local failure.
+It is off by default and sends the full URL externally. The tool instructions
+require explicit user authorization for a public, non-sensitive URL. Successful
+local extraction, oversized responses, unsupported types and PDF parser errors
+never trigger Jina. Rendering remains local even when interactive tools are off.
 
-- Returned text, including headings and truncation notice: **24 KiB / 600 lines**,
-  whichever limit is reached first. These are byte/line limits, not token counts.
-- All extraction paths share the same final output limiter, including Jina/PDF.
-- If truncated, the full extracted text is saved to a unique private directory
-  under the OS temp directory (`pi-web-fetch-*/content.md`, file mode `0600`).
-- The tool returns that path and small metadata only; full content is not hidden
-  in result details. Read selected sections with `read` offset/limit or search
-  the saved file. Reading it all again defeats context protection.
-- UTF-8 is preserved even when truncation falls inside a long line.
-- Error text is limited to 2 KiB / 20 lines; titles and URL metadata are bounded.
-- Saved files remain available after the call; clean them up when no longer
-  needed. They contain fetched content and are not automatically expired here.
+## Limits and artifacts
 
-## Download protection
+Output is capped at **24 KiB / 600 lines**; full extracted output is saved when
+truncated. Errors are capped at 2 KiB / 20 lines. Headers report final and, when
+different, requested URLs. Download limits are **5 MiB**, or **20 MiB** for PDFs,
+including magic-byte detection through generic download endpoints. Actual
+streamed bytes are counted. The total request/fallback deadline is 30 seconds.
 
-HTTP and Jina responses are streamed with a **5 MiB** body limit; PDFs use
-**20 MiB**. Actual bytes are counted, so missing/incorrect Content-Length and
-compressed/chunked responses cannot bypass the limit. Oversized bodies are
-cancelled, not retried through Jina. Each request has a 30-second timeout and
-honors caller cancellation. A fallback can take an additional 30 seconds.
+Original PDFs and truncated search/fetch results share a private OS-temp folder
+`pi-web-artifacts-<uid>` (0700; files 0600). On writes, entries older than 24 hours
+are pruned, then oldest entries are removed to fit 128 files / 128 MiB. Limits
+are best-effort across concurrent Pi processes; no daemon removes idle files.
+Save a copy elsewhere for durable work. Full extracted text is not a claim of
+complete source coverage. Use `read` offset/limit or search saved files.
 
-PDF extraction still reads at most the first 100 pages, as reported in the
-saved text. “Full extracted text” means the extraction result, not original HTML
-or guaranteed complete source-document content. PDF resources are destroyed
-after extraction.
+## Maintenance
 
-## Installation and tests
+Run `npm ci --ignore-scripts` in this extension's installed directory; existing
+lockfile dependencies are unchanged. Source and sibling `web-shared` helpers
+must be installed together. Restart Pi or `/reload` after applying changes.
 
-```bash
-cd ~/.pi/agent/extensions/web-fetch
-npm ci --ignore-scripts
-npm test
-```
-
-Tests use the installed Pi extension loader with mocked HTTP responses. They
-exercise size and line limits, long single lines, Unicode, large titles, small
-metadata, full-text preservation, HTML, Jina fallback, PDF extraction, oversized
-body cancellation, invalid protocols, cancellation and bounded errors.
-
-Set `PI_CODING_AGENT_PACKAGE` to Pi's package directory if it is not found beside
-Node or under npm's global root. Use `/reload` in Pi to activate changes.
-
-Existing oversized results already recorded in a session are not rewritten.
-Use `/compact` or start a fresh session if an earlier fetch filled the context.
+`npm test` uses the Pi loader, synthetic HTTP responses and generated PDFs.
+Set `PI_CODING_AGENT_PACKAGE` if Pi is not found beside Node/npm. Browser rendering
+and cancellation are tested by the sibling browser suite against a local server.

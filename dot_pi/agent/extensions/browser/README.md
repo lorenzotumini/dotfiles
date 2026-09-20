@@ -1,8 +1,8 @@
 # Browser extension
 
-Eight Playwright tools for live frontend inspection with persistent Chromium.
-Tools are **registered but off by default**, to avoid adding browser tool schemas
-and instructions to every session.
+Interactive Playwright tools for live frontend inspection. Only the small
+`browser_enable` loader is active by default; it makes the other nine tools
+available on the next model call. `/browser on/off` remains available.
 
 ## Install / enable
 
@@ -20,7 +20,7 @@ In Pi:
 ```
 /reload
 /browser          # toggle (enable, or disable + close)
-/browser on       # enable all eight tools
+/browser on       # enable interactive tools
 /browser off      # disable + close Chromium, clear buffers
 /browser status   # status
 ```
@@ -29,12 +29,14 @@ In Pi:
 saved as a custom session entry and restored from the **active branch** on
 reload/resume. A new session starts off. Enabling does not launch Chromium;
 the first page-touching tool does. Unrelated tools stay enabled/disabled as they
-were; the extension changes only its own eight tools.
+were; the extension changes only its own interactive tools.
 
 ## Tools
 
 | Tool | Purpose |
 |---|---|
+| `browser_enable` | Enable interactive tools without launching Chromium |
+| `browser_snapshot` | Read bounded visible text and links/form controls |
 | `browser_goto` | Navigate; return HTTP status and sanitized final URL |
 | `browser_eval` | Evaluate expression, function, async function or IIFE; return a small serializable summary |
 | `browser_console` | Inspect latest console/pageerror entries |
@@ -104,15 +106,22 @@ not a claim that all selected rows fit in the returned text.
 
 ## Lifecycle and known limitations
 
-- Tools serialize against the shared page in submission order; close/off/shutdown
-  also use the same queue. A failed operation does not poison the queue.
-- Closing clears buffers and prevents stale asynchronous network callbacks from
-  repopulating them. The persistent profile remains on disk.
-- `browser_goto` defaults to 30 seconds (configurable up to 120 seconds); ordinary
-  Playwright actions default to 15 seconds.
-- Arbitrary eval is not a sandbox, and has no execution deadline. A never-resolving
-  promise or infinite loop can stall operations, including queued shutdown.
-  Avoid unbounded evaluations; active-operation cancellation is not implemented.
+- Operations serialize against the shared page. A failed call does not poison
+  the queue. Close/off/shutdown interrupt the active operation and invalidate
+  queued calls, so a hung evaluation cannot block shutdown.
+- A call deadline or caller cancellation closes the actual browser context.
+  This stops both never-resolving promises and infinite renderer loops; it also
+  closes the current page. Subsequent navigation can relaunch normally.
+- All operations have a 30-second outer deadline; `browser_goto` and
+  `browser_eval` accept `timeoutMs` up to 120 seconds. Ordinary Playwright actions
+  also have a 15-second inner timeout.
+- Default profiles are unique private temporary directories per extension/session,
+  retained across calls and `browser_close`, removed on session shutdown/reload.
+  No existing shared profile is imported. For intentional persistence across Pi
+  restarts, set `PI_BROWSER_PROFILE` explicitly; don't share it concurrently.
+- `web_fetch mode=render` always uses a separate disposable unauthenticated
+  browser. It executes site scripts and subresource requests but never reads
+  this extension's profile. It works while interactive tools are off.
 - One shared page; no tab management, file-upload/download or OTP helpers.
 - Network headers/status only: request/response bodies are not captured. Consume
   response bodies in eval (`await r.text()`) to avoid misleading ERR_ABORTED rows.
@@ -125,7 +134,7 @@ not a claim that all selected rows fit in the returned text.
 
 | Variable | Behavior |
 |---|---|
-| `PI_BROWSER_PROFILE` | Override persistent profile; default `~/.pi/agent/extensions/browser/.profile` |
+| `PI_BROWSER_PROFILE` | Opt into a persistent profile path; default unique temporary session profile |
 | `PI_BROWSER_HEADFUL` | Any nonempty value launches a visible window instead of headless |
 
 ## Tests
@@ -134,11 +143,12 @@ not a claim that all selected rows fit in the returned text.
 npm --prefix ~/.pi/agent/extensions/browser test
 ```
 
-Tests load the actual extension through installed Pi and drive all eight tools
+Tests load the actual extension through installed Pi and drive interactive tools
 against a local HTTP fixture with synthetic credentials and a temporary profile.
 They verify redaction in text/serialized details, output/error limits, network
 and console filters/draining, page errors, filling/clicking, screenshots,
-persistence, activation/branch restoration and serialization. No real accounts
+persistence, activation/branch restoration, serialization, hung-eval cancellation
+and isolated JS rendering. No real accounts
 or the default profile are used. Temporary profiles/screenshots are cleaned up.
 Set `PI_CODING_AGENT_PACKAGE` for a Pi installation outside the usual Node/npm
 locations. Chromium must already be installed via the matching local CLI.

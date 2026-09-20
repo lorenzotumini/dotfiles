@@ -21,14 +21,15 @@ const files = [];
 let checks = 0;
 const limit = 24 * 1024;
 
-async function run(fetch, url = 'https://example.test/article', signal, allowJina) {
+async function run(fetch, url = 'https://example.test/article', signal, allowJina, options = {}) {
   globalThis.fetch = fetch;
-  const result = await tool.execute('test', { url, allowJina }, signal);
+  const result = await tool.execute('test', { url, allowJina, ...options }, signal);
   const text = result.content[0].text;
   assert.ok(Buffer.byteLength(text) <= limit, 'text byte ceiling');
   assert.ok(text.split('\n').length <= 600, 'line ceiling');
   assert.ok(Buffer.byteLength(JSON.stringify(result.details)) < 4096, 'no hidden full text in metadata');
   if (result.details.fullOutputPath) files.push(result.details.fullOutputPath);
+  if (result.details.originalPath) files.push(result.details.originalPath);
   checks++;
   return result;
 }
@@ -48,8 +49,8 @@ function oversized(headers = {}, max = 5 * 1024 * 1024) {
   }), { headers: { 'content-type': 'text/plain', ...headers } });
   return { response, cancelled: () => cancelled };
 }
-function pdfFixture() {
-  const stream = 'BT /F1 12 Tf 72 720 Td (PDF smoke test) Tj ET';
+function pdfFixture(blank = false) {
+  const stream = blank ? "" : 'BT /F1 12 Tf 72 720 Td (PDF smoke test) Tj ET';
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
@@ -102,8 +103,10 @@ try {
     shortCalls++;
     return new Response('<html><body><article><h1>Example</h1><p>A short public article.</p></article></body></html>', {headers:{'content-type':'text/html'}});
   });
-  assert.match(short.content[0].text, /may be incomplete/);
+  assert.doesNotMatch(short.content[0].text, /may be incomplete/);
   assert.equal(shortCalls, 1);
+  const shortWithScript = await run(async () => new Response('<html><body><main>Service is healthy.</main><script>analytics()</script></body></html>', {headers:{'content-type':'text/html'}}));
+  assert.match(shortWithScript.content[0].text, /Service is healthy/);
   let jinaCalls = 0;
   const jina = await run(async url => {
     if (String(url).startsWith('https://r.jina.ai/')) {
@@ -128,6 +131,41 @@ try {
 
   const pdf = await run(async () => new Response(pdfFixture(), { headers: { 'content-type': 'application/pdf' } }));
   assert.match(pdf.content[0].text, /PDF smoke test/);
+  assert.match(pdf.content[0].text, /Physical page 1/);
+  assert.equal(pdf.details.sourceTruncated, false);
+  assert.equal((await stat(pdf.details.originalPath)).mode & 0o777, 0o600);
+  const generic = await run(async () => new Response(pdfFixture(), { headers: { 'content-type': 'application/octet-stream' } }));
+  assert.match(generic.content[0].text, /PDF smoke test/);
+  await assert.rejects(run(async () => new Response(pdfFixture(), {headers:{'content-type':'application/pdf'}}), undefined, undefined, false, {pages:'2'}), /Invalid PDF pages/); checks++;
+  const redirectHTML = '<html><head><title>Guide</title></head><body><main><p>Short but useful docs.</p><a href="../api">API</a><table><tr><th>Option</th><th>Value</th></tr><tr><td>timeout</td><td>30</td></tr></table><pre><code>const x = 1;\nconsole.log(x);</code></pre></main></body></html>';
+  const redirect = await run(async () => {
+    const response = new Response(redirectHTML, {headers:{'content-type':'text/html'}});
+    Object.defineProperty(response, 'url', {value:'https://example.test/new/docs/guide'});
+    return response;
+  });
+  assert.equal(redirect.details.url, 'https://example.test/new/docs/guide');
+  assert.match(redirect.content[0].text, /https:\/\/example.test\/new\/api/);
+  assert.match(redirect.content[0].text, /\| timeout \| 30 \|/);
+  assert.match(redirect.content[0].text, /```[\s\S]*const x = 1;/);
+  for (const blocked of ['<title>Just a moment</title><body>Verify you are human</body>', '<title>Login</title><body><form><input type="password">Sign in</form></body>']) {
+    await assert.rejects(run(async () => new Response('<html><head>' + blocked + '</html>', {headers:{'content-type':'text/html'}})), /Suspected/); checks++;
+  }
+  const raw = await run(async () => new Response(redirectHTML, {headers:{'content-type':'text/html'}}), undefined, undefined, false, {mode:'raw'});
+  assert.match(raw.content[0].text, /<table>/);
+  const { parseInWorker } = await import('../fetch.mjs');
+  await assert.rejects(parseInWorker({kind:'html', body:redirectHTML, url:'https://example.test'}, undefined, 1), /timed out/); checks++;
+  const parserAbort = new AbortController();
+  const pending = parseInWorker({kind:'html', body:html, url:'https://example.test'}, parserAbort.signal);
+  parserAbort.abort();
+  await assert.rejects(pending, /cancelled/); checks++;
+  const blankPDF = await run(async () => new Response(pdfFixture(true), {headers:{'content-type':'application/pdf'}}));
+  assert.deepEqual(blankPDF.details.emptyTextPages, [1]);
+  assert.match(blankPDF.content[0].text, /No extractable text/);
+  const flight = '23:' + JSON.stringify(['$', 'article', null, {children:['$', 'p', null, {children:'Next flight content '.repeat(20)}]}]);
+  const rscHTML = '<html><body><script>self.__next_f.push([1,' + JSON.stringify(flight) + '])</script></body></html>';
+  const rsc = await run(async () => new Response(rscHTML, {headers:{'content-type':'text/html'}}));
+  assert.equal(rsc.details.extraction, 'rsc');
+  assert.match(rsc.content[0].text, /Next flight content/);
   const bigPdf = oversized({ 'content-type': 'application/pdf' }, 20 * 1024 * 1024);
   await assert.rejects(run(async () => bigPdf.response), /Response too large/);
   assert.equal(bigPdf.cancelled(), true); checks++;
@@ -142,5 +180,5 @@ try {
   console.log(`PASS: ${checks} cases; byte/line limits, UTF-8, private full-text files, metadata, HTML, Jina, PDF, body cancellation, invalid URLs and errors.`);
 } finally {
   globalThis.fetch = originalFetch;
-  for (const file of files) await rm(dirname(file), { recursive: true, force: true });
+  for (const file of files) await rm(file, { force: true });
 }

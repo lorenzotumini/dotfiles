@@ -1,15 +1,16 @@
+import { saveArtifact } from '../web-shared/artifacts.mjs';
 // Narrow no-key adapter to Exa's documented hosted MCP search tool.
-// No paid credentials, automatic retries, provider failover, or local result cache.
+// No paid credentials, automatic retries, provider failover, or remote extraction fallback.
 export const ENDPOINT = 'https://mcp.exa.ai/mcp';
 export const MAX_RESPONSE_BYTES = 1024 * 1024;
 export const MAX_OUTPUT_BYTES = 16 * 1024;
 export const MAX_OUTPUT_LINES = 400;
 
-export function bounded(text, bytes = MAX_OUTPUT_BYTES, lines = MAX_OUTPUT_LINES) {
+export function bounded(text, bytes = MAX_OUTPUT_BYTES, lines = MAX_OUTPUT_LINES, savedPath) {
   text = String(text);
   const truncated = Buffer.byteLength(text) > bytes || text.split('\n').length > lines;
   if (!truncated) return { text, truncated: false };
-  const notice = '\n[Truncated. Narrow the search or use web_fetch on a relevant URL. Omitted content was not saved.]';
+  const notice = savedPath ? `\n[Truncated. Full result: ${savedPath}. Read selected ranges or search that file.]` : '\n[Truncated. Narrow the search or use web_fetch on a relevant URL.]';
   const prefix = new TextDecoder().decode(Buffer.from(text).subarray(0, bytes - Buffer.byteLength(notice)), { stream: true });
   return { text: prefix.split('\n').slice(0, lines - 1).join('\n') + notice, truncated: true };
 }
@@ -45,6 +46,51 @@ export function buildQuery(args) {
   return { query: composed, count };
 }
 
+export function buildFilters(args) {
+  const filters = {};
+  for (const key of ['includeDomains', 'excludeDomains']) {
+    if (args[key] === undefined) continue;
+    if (!Array.isArray(args[key]) || !args[key].length || args[key].length > 10) throw new Error(`${key}: use 1–10 domains`);
+    filters[key] = args[key].map(value => {
+      if (typeof value !== 'string' || value.length > 253 || !/^[a-z0-9.-]+$/i.test(value) || !value.includes('.') || value.includes('..')) throw new Error(`${key}: domain names only, no URLs/paths`);
+      return value.toLowerCase();
+    });
+  }
+  for (const key of ['startPublishedDate', 'endPublishedDate']) {
+    const value = args[key];
+    if (value === undefined) continue;
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0, 10) !== value) throw new Error(`${key}: use a valid YYYY-MM-DD date`);
+    filters[key] = value;
+  }
+  if (filters.startPublishedDate && filters.endPublishedDate && filters.startPublishedDate > filters.endPublishedDate) throw new Error('Publication date range is reversed');
+  if (args.maxAgeHours !== undefined) {
+    if (!Number.isInteger(args.maxAgeHours) || args.maxAgeHours < 0 || args.maxAgeHours > 8760) throw new Error('maxAgeHours must be an integer from 0 to 8760');
+    filters.maxAgeHours = args.maxAgeHours;
+  }
+  return filters;
+}
+
+export function formatResults(raw, filters = {}) {
+  let data;
+  try { data = JSON.parse(raw); } catch { return raw; }
+  if (!Array.isArray(data.results)) return raw;
+  const domainMatches = (host, domains) => domains?.some(domain => host === domain || host.endsWith('.' + domain));
+  return data.results.map((result, i) => {
+    const warnings = [];
+    let host;
+    try { host = new URL(result.url).hostname; } catch { warnings.push('Invalid source URL'); }
+    if (host && ((filters.includeDomains && !domainMatches(host, filters.includeDomains)) || domainMatches(host, filters.excludeDomains))) warnings.push('Provider returned a source outside the requested domain filters');
+    const date = typeof result.publishedDate === 'string' ? result.publishedDate.slice(0, 10) : undefined;
+    if (filters.startPublishedDate || filters.endPublishedDate) {
+      if (!date) warnings.push('Publication date unavailable; date filter cannot be verified');
+      else if ((filters.startPublishedDate && date < filters.startPublishedDate) || (filters.endPublishedDate && date > filters.endPublishedDate)) warnings.push('Publication date outside the requested range');
+    }
+    return [`[${i+1}] ${result.title || 'Untitled'}`, `URL: ${result.url || '(missing)'}`, date ? `Published: ${date}` : '',
+      warnings.length ? `Warning: ${warnings.join('; ')}` : '',
+      ...(Array.isArray(result.highlights) && result.highlights.length ? result.highlights : [result.text || ''])].filter(Boolean).join('\n');
+  }).join('\n\n') || 'No results found.';
+}
+
 // Undefined means an unrelated MCP notification/response, not an empty search.
 export function decodeMessage(payload) {
   const message = JSON.parse(payload);
@@ -69,6 +115,8 @@ async function readResult(response, signal) {
   }
   if (!response.body) throw new Error('Empty Exa response.');
   const reader = response.body.getReader();
+  const abort = () => { void reader.cancel().catch(() => {}); };
+  signal.addEventListener('abort', abort, {once:true});
   const decoder = new TextDecoder();
   const sse = response.headers.get('content-type')?.includes('text/event-stream');
   let buffer = '';
@@ -83,6 +131,7 @@ async function readResult(response, signal) {
     while (true) {
       signal.throwIfAborted();
       const { value, done } = await reader.read();
+      signal.throwIfAborted();
       if (done) { buffer += decoder.decode(); break; }
       bytes += value.byteLength;
       if (bytes > MAX_RESPONSE_BYTES) throw new Error('Exa response exceeded the 1 MiB download limit. Narrow the query.');
@@ -101,6 +150,7 @@ async function readResult(response, signal) {
     if (text === undefined) throw new Error('Exa returned no matching search response.');
     return text;
   } finally {
+    signal.removeEventListener('abort', abort);
     await reader.cancel().catch(() => {});
     reader.releaseLock();
   }
@@ -108,16 +158,18 @@ async function readResult(response, signal) {
 
 export async function search(args, signal, fetchImpl = fetch) {
   const built = buildQuery(args);
+  const filters = buildFilters(args);
+  const advanced = Object.keys(filters).length > 0;
   const requestSignal = AbortSignal.any([AbortSignal.timeout(25_000), ...(signal ? [signal] : [])]);
   try {
     requestSignal.throwIfAborted();
-    const response = await fetchImpl(ENDPOINT, {
+    const response = await fetchImpl(advanced ? ENDPOINT + "?tools=web_search_advanced_exa" : ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: {
-        name: 'web_search_exa', arguments: {
-          query: built.query, numResults: built.count, type: 'auto', livecrawl: 'fallback', contextMaxCharacters: 8000,
-        },
+        name: advanced ? 'web_search_advanced_exa' : 'web_search_exa', arguments: advanced ? {
+          query: built.query, numResults: built.count, type: 'auto', textMaxCharacters: 2000, enableHighlights: true, highlightsMaxCharacters: 1200, ...filters,
+        } : { query: built.query, numResults: built.count, type: 'auto', livecrawl: 'fallback', contextMaxCharacters: 8000 },
       } }),
       signal: requestSignal,
     });
@@ -126,8 +178,11 @@ export async function search(args, signal, fetchImpl = fetch) {
       if (response.status === 429) throw new Error('Exa free-search rate limit reached. Wait before trying again; no paid fallback or automatic retry was used.');
       throw new Error(`Exa HTTP ${response.status}. No automatic retry or paid fallback was used.`);
     }
-    const output = bounded(await readResult(response, requestSignal));
-    return { content: [{ type: 'text', text: output.text }], details: { provider: 'exa-free', requestedCount: built.count, truncated: output.truncated } };
+    const raw = await readResult(response, requestSignal);
+    const text = formatResults(raw, filters);
+    const fullOutputPath = bounded(text).truncated ? await saveArtifact(text, 'txt', requestSignal) : undefined;
+    const output = bounded(text, MAX_OUTPUT_BYTES, MAX_OUTPUT_LINES, fullOutputPath);
+    return { content: [{ type: 'text', text: output.text }], details: { provider: 'exa-free', requestedCount: built.count, truncated: output.truncated, fullOutputPath } };
   } catch (error) {
     if (signal?.aborted) throw new Error('Web search cancelled.');
     if (requestSignal.aborted) throw new Error('Exa search timed out after 25 seconds.');

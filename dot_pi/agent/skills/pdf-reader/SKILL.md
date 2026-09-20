@@ -1,140 +1,43 @@
 ---
 name: pdf-reader
-description: Read and comprehend PDF files, especially math lecture notes and academic papers. Use when the user asks to read, parse, analyze, or extract content from a PDF file.
+description: Read and analyze PDFs, including math papers, lecture notes, scanned pages, equations and diagrams, using local text extraction and page images.
 ---
 
-# PDF Reader
+# PDF reader
 
-Read and comprehend PDF files, especially math lecture notes and academic papers. Uses a hybrid text extraction + vision approach for maximum comprehension of equations, diagrams, and structured content.
+Run helpers with `SKILL_DIR/.venv/bin/python SKILL_DIR/scripts/<script>.py`.
+Use an existing local path, including the original PDF saved by `web_fetch`,
+to avoid downloading it again. If dependencies or OCR languages are missing,
+read [references/setup.md](references/setup.md).
 
-## Setup
+| Helper | Usage and defaults |
+|---|---|
+| `pdf_info.py PATH` | Metadata, first 20 page statistics and TOC entries. `--pages SPEC`, `--toc-offset N`, `--limit N` for more. |
+| `pdf_extract.py PATH` | First 10 pages; select with `--pages SPEC` (maximum 100). |
+| `pdf_search.py PATH QUERY` | First 100 pages, at most 30 matches. Prefer `--literal` for ordinary terms; supports regex, `--pages SPEC`, `--limit N`, `--context N`. Searches within lines. |
+| `pdf_render.py PATH` | First page at 150 DPI. `--pages SPEC`, `--dpi 36..300`; maximum 10 pages / 40 megapixels per call. Returns private PNG paths for `read`. |
 
-All scripts use a venv at `SKILL_DIR/.venv` with `pymupdf` installed. If the venv is missing, create it from `requirements.txt`:
+Page selections are **physical 1-based indices**, e.g. `3`, `1-5`, `2,7-9`, or
+`all` within the helper's per-call limit. Printed labels can differ; text and
+metadata report them when available. Cite physical indices and printed labels
+when they differ.
 
-```bash
-python3 -m venv SKILL_DIR/.venv
-SKILL_DIR/.venv/bin/pip install -r SKILL_DIR/requirements.txt
-```
+For a targeted question, locate the relevant pages using the TOC or search,
+then extract those pages and nearby context. For a full reading, cover the
+whole document in sections and keep track of coverage. Output limits and
+selected-page limits are separate: extraction/search save full selected-page
+text to a private file if console output is truncated. Read relevant ranges
+from that file; delete helper artifacts when finished.
 
-**Python command:** Always invoke scripts with:
-```
-SKILL_DIR/.venv/bin/python SKILL_DIR/scripts/<script>.py [args]
-```
+Render relevant equations, tables, diagrams and ambiguous layouts, then inspect
+the images with `read`. Check a representative multi-column page against its
+text before trusting reading order. `--sort` offers spatial text sorting but can
+interleave columns. Raster image counts miss vector diagrams; low math density
+can miss equations. Neither proves text alone is sufficient. If the selected
+model cannot see images, report that limitation for visual claims.
 
-## Scripts
-
-All scripts are in `SKILL_DIR/scripts/`.
-
-| Script | Purpose | Key args |
-|---|---|---|
-| `pdf_info.py <path>` | Metadata + per-page analysis (page count, TOC, text density, math density, image count) | — |
-| `pdf_extract.py <path> [--pages SPEC]` | Extract text by page | `--pages all\|1-5\|1,3,7\|3` |
-| `pdf_render.py <path> [--pages SPEC] [--dpi N]` | Render pages to PNG images in `/tmp/pi-pdf-*/` | `--pages`, `--dpi` (default 150) |
-| `pdf_search.py <path> <query> [--context N] [--literal]` | Search text content by regex or literal | `--context` lines (default 3), `--literal` flag |
-
-Page specs: `all`, `1-5`, `1,3,7`, `3` (1-indexed, inclusive ranges).
-Invalid, reversed or out-of-bounds selections now fail explicitly rather than
-silently dropping/clipping pages. DPI must be positive; search context cannot
-be negative. Each rendering call uses a unique private temporary directory,
-so repeated/concurrent renders cannot overwrite previous images.
-
-For long documents, select page ranges or redirect extracted text to a private
-file and inspect selected sections; do not dump the entire PDF into context.
-Scanned/image-only pages require vision or separately installed OCR. Math density
-is a heuristic: a low score does not prove a page has no equations.
-
-Regression tests (generated fixtures, no user PDFs):
-```bash
-SKILL_DIR/.venv/bin/python -B -m unittest discover -s SKILL_DIR/tests -v
-```
-
-## Strategy: How to Read a PDF
-
-### Step 1: Always Triage First
-
-Run `pdf_info.py` on every new PDF before doing anything else. This tells you:
-- How many pages (determines strategy)
-- Whether there's a TOC (enables structural navigation)
-- Per-page math density and image count (identifies which pages need vision)
-- Per-page text length (spots pages that are mostly diagrams/figures)
-
-### Step 2: Pick a Strategy Based on Size and Content
-
-#### Short PDFs (≤15 pages)
-- Extract all text: `pdf_extract.py <path>`
-- Render all pages: `pdf_render.py <path>`
-- Read all rendered images with the `read` tool for full visual comprehension
-- This gives complete understanding at reasonable token cost
-
-#### Medium PDFs (15–60 pages)
-- Extract all text first (cheap, gives structural overview)
-- Check `pdf_info.py` output for pages with high `math_density` (>0.02) or `image_count` > 0 or low `text_length` (<100, likely diagram-only pages)
-- Render only those math/diagram-heavy pages as images
-- Read those images with `read` for equation and figure comprehension
-- For the rest, text extraction is sufficient
-
-#### Long PDFs (60+ pages)
-- Extract text for a structural overview — focus on TOC and section headers
-- Do NOT render all pages (too many tokens)
-- For targeted questions: use `pdf_search.py` to find relevant pages, then render those
-- For full comprehension: work section by section, summarizing as you go
-- Warn the user about scope — offer to focus on specific sections
-
-### Step 3: Targeted Lookups
-
-When the user asks about something specific (e.g., "check theorem 3.2", "what's on page 7"):
-1. `pdf_search.py <path> "theorem 3.2"` — find the page
-2. `pdf_render.py <path> --pages <page>` — render just that page
-3. `read` the image — see the actual theorem with proper math rendering
-4. If context is needed, extract text from surrounding pages
-
-### Step 4: Visual Reading Guidelines
-
-When reading rendered page images:
-- **150 DPI** (default) is good for most math and text
-- **200 DPI** if equations are small, dense, or hard to read at 150
-- **100 DPI** only for quick structural scanning (saves tokens)
-- State equations explicitly in your response using LaTeX notation when discussing them
-- Describe diagrams and figures in detail — the user may not be looking at the PDF simultaneously
-- Note page numbers when referencing content so the user can find it
-
-### Step 5: What to Watch For
-
-- **Pages with low text_length but high image_count**: likely full-page diagrams or figures — always render these
-- **Pages with high math_density**: equations that text extraction will mangle — always render these
-- **Pages with decent text but zero math**: text extraction alone is fine, skip rendering
-- **TOC entries**: use these to navigate structurally rather than reading linearly
-
-## Common Patterns
-
-### "Read this PDF" (full document)
-```
-1. pdf_info.py → assess size and content
-2. Pick strategy (short/medium/long)
-3. Extract text + selectively render
-4. Provide summary with key findings
-```
-
-### "What does theorem X say?"
-```
-1. pdf_search.py → find the page
-2. pdf_render.py → render that page (and maybe the next for proof continuation)
-3. Read the image, state the theorem precisely
-```
-
-### "Explain the proof on page N"
-```
-1. pdf_render.py --pages N → render the page
-2. Read the image for full visual comprehension
-3. Also extract text from pages N-1 and N+1 for surrounding context
-4. Walk through the proof step by step
-```
-
-### "Summarize this paper"
-```
-1. pdf_info.py → get TOC and page count
-2. pdf_extract.py → full text extraction
-3. Read abstract, intro, conclusion first (text is usually sufficient)
-4. Render figures/theorem pages as needed for deeper understanding
-5. Provide structured summary
-```
+Extraction and search support optional `--ocr eng` (or `eng+ita`) on up to 10
+selected pages, using local Tesseract. Missing text can mean scans, blank pages,
+or unsupported encoding; a search miss is inconclusive on those pages. OCR
+helps locate ordinary words but equations and layout still need visual checks.
+Use `--max-chars N` (default 24000) to control extraction/search output.

@@ -48,7 +48,10 @@ const shots = [];
 let extension;
 let ctx;
 const server = createServer((req, res) => {
-  if (req.url.startsWith('/api')) {
+  if (req.url.startsWith('/render')) {
+    res.writeHead(200, {'content-type':'text/html'});
+    res.end('<html><body><script>setTimeout(() => { document.body.textContent = localStorage.getItem("fixture-private") ? "LEAKED" : "render-isolated"; }, 50);</script></body></html>');
+  } else if (req.url.startsWith('/api')) {
     res.writeHead(200, {
       'content-type': 'application/json', 'set-cookie': `session=${secret}; Path=/; HttpOnly`,
       'x-api-key': secret, 'x-access-token': secret,
@@ -74,7 +77,7 @@ try {
   const loaded = await loadExtensions([entry], process.cwd());
   assert.deepEqual(loaded.errors, []);
   extension = loaded.extensions[0];
-  assert.equal(extension.tools.size, 8);
+  assert.equal(extension.tools.size, 10);
   const toolNames = [...extension.tools.keys()];
   let active = ['read', ...toolNames];
   let branch = [];
@@ -104,8 +107,8 @@ try {
   const evalJS = expression => call('browser_eval', { expression });
   const text = result => result.content[0].text;
   await start();
-  assert.deepEqual(active, ['read']);
-  await command('on');
+  assert.deepEqual(active, ['read', 'browser_enable']);
+  await call('browser_enable');
   assert.ok(toolNames.every(name => active.includes(name)));
   assert.ok(active.includes('read'));
   await command('on');
@@ -170,6 +173,7 @@ try {
   const bigNetwork = await call('browser_network', { limit:200, verbose:true });
   assert.equal(bigNetwork.details.truncated, true);
 
+  assert.match(text(await call('browser_snapshot')), /Apply/);
   const shot = await call('browser_screenshot');
   shots.push(dirname(shot.details.path));
   assert.equal((await readFile(shot.details.path)).subarray(0,8).toString('hex'), '89504e470d0a1a0a');
@@ -184,18 +188,61 @@ try {
   // Same-page operations serialize in submission order.
   await Promise.all([call('browser_fill',{selector:'#name',value:'first'}), call('browser_fill',{selector:'#name',value:'second'})]);
   assert.equal(text(await evalJS('document.querySelector("#name").value')), 'second');
+  await assert.rejects(call('browser_eval', {expression:'new Promise(() => {})', timeoutMs:100}), /timed out/); checks++;
+  await call('browser_goto', {url:base});
+  await assert.rejects(call('browser_eval', {expression:'(() => { while (true) {} })()', timeoutMs:100}), /timed out/); checks++;
+  await call('browser_goto', {url:base});
+  const abort = new AbortController();
+  const pending = extension.tools.get('browser_eval').definition.execute('abort', {expression:'new Promise(() => {})'}, abort.signal);
+  setTimeout(() => abort.abort(), 100);
+  await assert.rejects(pending, /cancelled/); checks++;
+  await call('browser_goto', {url:base});
+  const { renderPage } = await import('../render.mjs');
+  await evalJS('localStorage.setItem("fixture-private", "yes")');
+  const rendered = await renderPage(base + '/render');
+  assert.match(rendered.html, /render-isolated/);
+  assert.equal(text(await evalJS('localStorage.getItem("fixture-private")')), 'yes');
+  await assert.rejects(renderPage(base + '/render', undefined, 200), /timed out|Timeout/); checks++;
+  const fetched = await loadExtensions([resolve(dirname(fileURLToPath(import.meta.url)), '../../web-fetch/index.ts')], process.cwd());
+  assert.deepEqual(fetched.errors, []);
+  const readable = await fetched.extensions[0].tools.get('web_fetch').definition.execute('render', {url:base + '/render',mode:'render'});
+  assert.match(readable.content[0].text, /render-isolated/); checks++;
+  // Closing interrupts an active call and cancels queued calls before they touch the page.
+  const hanging = extension.tools.get('browser_eval').definition.execute('hang', {expression:'new Promise(() => {})'});
+  const queued = extension.tools.get('browser_eval').definition.execute('queue', {expression:'42'});
+  const settled = Promise.allSettled([hanging, queued]);
+  await new Promise(resolve => setTimeout(resolve, 100));
+  await call('browser_close');
+  assert.ok((await settled).every(result => result.status === 'rejected')); checks++;
+  // Independent default profiles can be open concurrently without sharing localStorage.
+  delete process.env.PI_BROWSER_PROFILE;
+  const isolated = [];
+  try {
+    for (let i=0;i<2;i++) {
+      const runtime = await loadExtensions([entry], process.cwd());
+      assert.deepEqual(runtime.errors, []);
+      isolated.push(runtime.extensions[0]);
+    }
+    const isolatedCall = (i, name, params) => isolated[i].tools.get(name).definition.execute('isolation', params);
+    await Promise.all([0,1].map(i => isolatedCall(i,'browser_goto',{url:base})));
+    await isolatedCall(0,'browser_eval',{expression:'localStorage.setItem("instance", "one")'});
+    assert.equal(text(await isolatedCall(1,'browser_eval',{expression:'localStorage.getItem("instance")'})), 'null'); checks++;
+  } finally {
+    for (const ext of isolated) for (const fn of ext.handlers.get('session_shutdown') ?? []) await fn({}, ctx);
+    process.env.PI_BROWSER_PROFILE = profile;
+  }
   await command('off');
-  assert.deepEqual(active, ['read']);
+  assert.deepEqual(active, ['read', 'browser_enable']);
   await command('');
   assert.match(messages.at(-1), /enabled/);
   assert.deepEqual([...active].sort(), ['read', ...toolNames].sort());
   await command('off');
-  assert.deepEqual(active, ['read']);
+  assert.deepEqual(active, ['read', 'browser_enable']);
   branch = [];
   await start();
-  assert.deepEqual(active, ['read']);
+  assert.deepEqual(active, ['read', 'browser_enable']);
   assert.deepEqual([...called].sort(), toolNames.sort());
-  console.log(`PASS: ${checks} checks; all 8 tools, real Chromium, synthetic-header redaction, bounded output/errors, gate/restore, buffers, screenshots, persistence and serialization.`);
+  console.log(`PASS: ${checks} checks; all 10 tools, real Chromium, synthetic-header redaction, bounded output/errors, gate/restore, buffers, screenshots, persistence and serialization.`);
 } finally {
   if (extension) for (const fn of extension.handlers.get('session_shutdown') ?? []) await fn({ reason:'quit' }, ctx);
   server.closeAllConnections();

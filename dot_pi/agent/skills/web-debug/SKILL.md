@@ -12,9 +12,9 @@ the actual `Authorization` header the SPA sent, a console error), not in source.
 
 ## Enable the tools first
 
-Browser tools are **off by default**. If `browser_*` tools are unavailable, ask
-the user to run `/browser on`; do not pretend to call them. `/browser` reports
-status and `/browser off` disables them and closes Chromium. The enable bit is
+Interactive browser tools are **off by default**. Call `browser_enable` to
+expose them on the next call. If the loader is unavailable, `/browser on` enables
+them manually. `/browser status` reports status and `/browser off` disables them and closes Chromium. The enable bit is
 restored from the active session branch on reload/resume; a new session starts off.
 
 ## Privacy and bounded output
@@ -68,8 +68,9 @@ Every playbook below is a variation on this:
 5. Form a hypothesis. Make a code change. Re-run the loop to verify.
 
 State (cookies, localStorage, IndexedDB) is persistent across `browser_*`
-calls, across turns, and across pi restarts — a session you opened earlier
-is still open now. That's a feature: don't `browser_close` between steps.
+calls and turns within the current Pi session. Cross-restart persistence requires
+an explicitly configured `PI_BROWSER_PROFILE`. Default profiles are isolated
+and removed on shutdown/reload. That's a feature: don't `browser_close` between steps.
 
 ## Playbooks
 

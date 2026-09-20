@@ -1,87 +1,41 @@
-# Web search — Exa free hosted search
+# Web search — free, keyless Exa
 
-`web_search` now calls the documented no-key Exa MCP endpoint:
-`https://mcp.exa.ai/mcp`, tool `web_search_exa`.
+`web_search` uses `https://mcp.exa.ai/mcp` without keys/accounts, retries, paid
+fallbacks, model identity or session transcripts. Only queries/options reach Exa.
+Exa's free service is rate limited and does not establish a no-retention or
+no-training guarantee. A 429 is reported to the agent without retrying.
 
-No account, API key, new npm dependency or general MCP bridge is required for
-this implementation. Run `/reload` in Pi to activate it.
+Ordinary calls use `web_search_exa`. `query`, `count` (1–10; default 5), and
+legacy `exactPhrases`, `excludeTerms`, `site` remain supported. The legacy fields
+compose query hints; they do not promise Google's operator semantics.
 
-## Usage and compatibility
+Optional `includeDomains`, `excludeDomains` (domain names),
+`startPublishedDate`, `endPublishedDate` (YYYY-MM-DD), and `maxAgeHours` select
+keyless `web_search_advanced_exa` through the endpoint's explicit tools parameter.
+Date inputs and domain syntax are validated. Freshness refers to cached content
+age, not publication age; 0 requests a fresh crawl. Structured results receive
+numbered titles/URLs/dates/excerpts. Domain/date mismatches are flagged when
+provider metadata allows checking; unknown provider text is preserved as-is.
+Returned dates and excerpts still need source verification.
 
-The familiar arguments remain: `query`, `exactPhrases`, `excludeTerms`, `site`,
-`count` (integer 1–10, default 5). At least query or a nonempty exact phrase is
-required. Inputs and the combined query are bounded.
+## Bounds and retention
 
-Phrase/exclusion/site arguments become query hints (`"phrase"`, `-"term"`,
-`site:domain/path`). **These are not guaranteed strict filters in Exa.** Verify
-source domains, phrases and exclusions rather than assuming Google's operator
-semantics. A supplied site URL retains its path but discards query/fragment.
+- 16 KiB / 400 lines of output; 1 MiB streamed response; 2 KiB / 20-line errors.
+- 25-second deadline including streamed reading; caller cancellation supported.
+- JSON and SSE responses are supported; matching response closes the stream.
+- Truncated full output is saved privately through sibling `web-shared`, shared
+  with fetch: 128 files / 128 MiB, old entries pruned after 24 hours on later writes.
+  Read selected ranges instead of putting the whole artifact back into context.
+- Small metadata only; no hidden full response in session result details.
 
-Results are Exa's text blocks containing source titles, URLs and excerpts, not
-a locally guaranteed structured list. Requested count may differ from actual
-results; metadata reports requestedCount, not an invented result count.
-Use `web_fetch` to read selected source URLs, and browser tools when interaction
-or local JavaScript rendering is needed.
+Use `web_fetch` for sources, `mode=render` for JS pages, and `browser_enable`
+when interaction is needed. `EXA_API_KEY` is ignored; the legacy Google auth
+example is not part of setup. Backend-specific transport/formatting remains in
+`exa.mjs`; Pi registration lives in `index.ts`.
 
-## Context, network and privacy limits
+Run `npm test` for offline JSON/SSE, limits, request/filter and formatting checks.
+No npm dependencies were added. Install the sibling shared helper and `/reload`.
 
-- Output: **16 KiB / 400 lines**, including a truncation notice; UTF-8 preserved.
-- Download: **1 MiB** streamed-body ceiling, regardless of Content-Length.
-- Errors: **2 KiB / 20 lines**, with no HTTP error-body dump.
-- Deadline: **25 seconds**, including response reading; caller abort supported.
-- Accepts JSON or SSE; reads matching JSON-RPC response ID, handles protocol and
-  tool errors, and closes the stream after the completed result rather than
-  waiting for a persistent SSE connection to end.
-- Only small metadata is returned; no hidden full-result objects or temp files.
-- The provider is asked for an 8,000-character context, but this is **not trusted
-  as an enforced cap**. Local byte/line limits apply independently.
-- Only the search query and search options are sent—not session transcripts,
-  session IDs, model names or browser cookies. Do not include private code,
-  credentials or confidential identifiers in queries.
-
-## Free-service limitations and terms
-
-Exa's documentation describes the hosted MCP free plan as covering casual use.
-Availability and quotas may change. A 429 reports the rate limit to the agent;
-there are **no automatic retries, paid fallbacks or limit-bypass mechanisms**.
-`EXA_API_KEY` and all Google key environment variables are intentionally ignored.
-This adapter does not enable usage-based Exa Agent/research tools.
-
-Pi itself saves tool calls and returned text in session logs. This adapter adds
-no separate result cache. A review of the public terms did **not establish
-blanket permission for indefinite result storage**; the terms contain broad
-copying restrictions alongside documented API/MCP use. This is not a legal
-clearance for archiving or redistribution. Check applicable terms/permissions
-for your use, especially commercial retention or redistribution. Exa's terms
-also permit certain input/output use for operating and improving its services.
-
-References checked during setup:
-- https://exa.ai/docs/reference/exa-mcp
-- https://exa.ai/terms
-- https://github.com/anomalyco/opencode/blob/dev/packages/opencode/src/tool/mcp-websearch.ts
-
-The adapter follows the documented hosted-tool approach also used by OpenCode;
-it is not a search-engine scraper.
-
-## Legacy Google configuration
-
-Google credentials are no longer needed or read. The old `auth.example.json`
-file is retained only as a legacy reference and is **not** an Exa setup step.
-No existing credential files or global Pi authentication settings were changed.
-
-This change does not modify web-fetch, including its current Jina fallback.
-
-## Tests
-
-```bash
-npm --prefix ~/.pi/agent/extensions/web-search test
-```
-
-Offline tests use synthetic responses to cover query validation, no-key request
-construction, JSON/SSE parsing, chunked Unicode, notifications, output limits,
-protocol/tool/HTTP errors, rate limits, oversized stream cancellation and
-pre-aborted requests. They make no network calls.
-
-A separate live smoke test through the installed Pi extension loader retrieved
-the original Transformer paper without credentials and verified that oversized
-provider excerpts were capped at 16 KiB.
+References: [Exa MCP](https://exa.ai/docs/get-started/exa-mcp),
+[advanced tool source](https://github.com/exa-labs/exa-mcp-server/blob/main/src/tools/webSearchAdvanced.ts),
+[privacy policy](https://exa.ai/privacy-policy).

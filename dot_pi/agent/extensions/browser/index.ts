@@ -27,10 +27,10 @@
  * Tweaks:
  *   PI_BROWSER_HEADFUL=1   launch a visible window (useful when debugging
  *                          the extension itself).
- *   PI_BROWSER_PROFILE     override the user-data dir (default ~/.pi/agent/extensions/browser/.profile)
+ *   PI_BROWSER_PROFILE     override the user-data dir (default private temporary per-session profile)
  */
 
-import { homedir } from "node:os";
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -75,6 +75,7 @@ const BROWSER_TOOL_NAMES = [
   "browser_click",
   "browser_screenshot",
   "browser_close",
+  "browser_snapshot",
 ];
 const ENABLED_ENTRY_TYPE = "browser-enabled";
 const KEEP_HEADERS = new Set([
@@ -126,8 +127,35 @@ function filterHeaders(
  */
 export default function browserExtension(pi: ExtensionAPI) {
   let opQueue: Promise<unknown> = Promise.resolve();
-  function serialize<T>(fn: () => Promise<T>): Promise<T> {
-    const next = opQueue.then(fn, fn).catch((error) => {
+  let runningAbort: AbortController | null = null;
+  let generation = 0;
+  let queueEpoch = 0;
+  function serialize<T>(fn: () => Promise<T>, signal?: AbortSignal, timeoutMs = 30000): Promise<T> {
+    const epoch = queueEpoch;
+    const next = opQueue.then(async () => {
+      if (epoch !== queueEpoch) throw new Error("Browser operation cancelled before starting");
+      signal?.throwIfAborted();
+      const controller = new AbortController();
+      runningAbort = controller;
+      const combined = AbortSignal.any([controller.signal, AbortSignal.timeout(timeoutMs), ...(signal ? [signal] : [])]);
+      let abort: () => void;
+      const cancelled = new Promise<never>((_resolve, reject) => {
+        abort = () => reject(new Error("Browser operation cancelled or timed out; context closed"));
+        combined.addEventListener("abort", abort, { once: true });
+        if (combined.aborted) abort();
+      });
+      const operation = fn();
+      try { return await Promise.race([operation, cancelled]); }
+      finally {
+        combined.removeEventListener("abort", abort!);
+        if (combined.aborted) {
+          await teardown();
+          // Let an in-flight launch observe generation invalidation before reusing the profile.
+          await operation.catch(() => {});
+        }
+        if (runningAbort === controller) runningAbort = null;
+      }
+    }).catch((error) => {
       throw new Error(bounded(error instanceof Error ? error.message : String(error), 2048, 20).text);
     });
     opQueue = next.catch(() => {});
@@ -138,19 +166,24 @@ export default function browserExtension(pi: ExtensionAPI) {
   const consoleBuf: ConsoleEntry[] = [];
   const netBuf: NetEntry[] = [];
 
+  const configuredProfile = process.env.PI_BROWSER_PROFILE;
   const profileDir =
-    process.env.PI_BROWSER_PROFILE ??
-    join(homedir(), ".pi", "agent", "extensions", "browser", ".profile");
+    configuredProfile ??
+    mkdtempSync(join(tmpdir(), "pi-browser-profile-"));
   const headless = !process.env.PI_BROWSER_HEADFUL;
 
   async function ensurePage(): Promise<Page> {
     if (page && !page.isClosed()) return page;
 
     if (!context) {
-      context = await chromium.launchPersistentContext(profileDir, {
+      const version = generation;
+      const launched = await chromium.launchPersistentContext(profileDir, {
         headless,
         viewport: { width: 1280, height: 800 },
+        timeout: 15000,
       });
+      if (version !== generation) { await launched.close(); throw new Error("Browser launch cancelled"); }
+      context = launched;
     }
 
     page = context.pages().find((p) => !p.isClosed()) ?? (await context.newPage());
@@ -211,6 +244,7 @@ export default function browserExtension(pi: ExtensionAPI) {
   }
 
   async function teardown(): Promise<void> {
+    generation++;
     const closing = context;
     context = null;
     page = null;
@@ -223,13 +257,12 @@ export default function browserExtension(pi: ExtensionAPI) {
     netBuf.length = 0;
   }
 
-  // Default-off gate. The browser tools collectively cost ~800 system-prompt
-  // tokens (snippets + guidelines), but are needed in a small minority of
-  // sessions. We keep all 8 tools registered so they appear in
+  // Default-off gate. The browser tools collectively cost prompt space (schemas, snippets and guidelines), but are needed in a small minority of
+  // sessions. We keep the interactive tools registered so they appear in
   // pi.getAllTools() and command discovery stays normal, but we strip them
   // from the active set so their promptSnippet / promptGuidelines drop out
   // of the system prompt. They become callable again when /browser on flips
-  // them back into the active set.
+  // them back into the active set. browser_enable stays available.
   let enabled = false;
 
   function setEnabled(on: boolean): void {
@@ -250,7 +283,9 @@ export default function browserExtension(pi: ExtensionAPI) {
 
   async function disable(): Promise<void> {
     setEnabled(false);
-    await serialize(teardown);
+    queueEpoch++;
+    runningAbort?.abort();
+    await teardown();
     pi.appendEntry(ENABLED_ENTRY_TYPE, { on: false });
   }
 
@@ -277,7 +312,44 @@ export default function browserExtension(pi: ExtensionAPI) {
   });
 
   pi.on("session_shutdown", async () => {
-    await serialize(teardown);
+    queueEpoch++;
+    runningAbort?.abort();
+    await opQueue;
+    await teardown();
+    if (!configuredProfile) await rm(profileDir, { recursive: true, force: true });
+  });
+
+  pi.registerTool({
+    name: "browser_enable", label: "Enable Browser",
+    description: "Enable interactive browser tools for web development, page interaction, or visual inspection. For reading JS pages use web_fetch mode=render. Debug state persists within this Pi session; separate sessions use isolated profiles by default.",
+    parameters: Type.Object({}),
+    async execute() { if (!enabled) await enable(); return toolResult("Browser tools enabled for the next call."); },
+  });
+
+  pi.registerTool({
+    name: "browser_snapshot", label: "Browser Snapshot",
+    description: "Read visible page text and a bounded list of links/form controls. Use selectors with browser_click/fill; inspect specific DOM details with browser_eval.",
+    parameters: Type.Object({}),
+    async execute(_id, _params, signal) {
+      return serialize(async () => {
+        const p = await ensurePage();
+        const snapshot = await p.evaluate(() => ({
+          text: document.body.innerText.slice(0, 12000),
+          controls: [...document.querySelectorAll('a,button,input,select,textarea')]
+            .filter(el => (el as HTMLElement).getClientRects().length).slice(0, 50).map(el => ({
+              tag: el.tagName.toLowerCase(), id: el.id, name: el.getAttribute('name'),
+              label: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 120),
+              href: el.getAttribute('href'),
+            })),
+        }));
+        snapshot.controls = snapshot.controls.map(el => {
+          let href: string | null = null;
+          try { if (el.href) href = safeUrl(new URL(el.href, p.url()).href); } catch {}
+          return { ...el, href };
+        });
+        return toolResult(JSON.stringify(snapshot, null, 2));
+      }, signal);
+    },
   });
 
   pi.registerTool({
@@ -299,7 +371,7 @@ export default function browserExtension(pi: ExtensionAPI) {
       ),
       timeoutMs: Type.Optional(Type.Integer({ minimum: 1, maximum: 120_000 })),
     }),
-    async execute(_id, params) {
+    async execute(_id, params, signal) {
       return serialize(async () => {
         const p = await ensurePage();
         const resp = await p.goto(params.url, {
@@ -314,7 +386,7 @@ export default function browserExtension(pi: ExtensionAPI) {
         const status = resp?.status();
         const finalUrl = safeUrl(p.url());
         return toolResult(`${status ?? "?"} ${finalUrl}`, { status, finalUrl });
-      });
+      }, signal, params.timeoutMs ?? 30000);
     },
   });
 
@@ -330,8 +402,9 @@ export default function browserExtension(pi: ExtensionAPI) {
     ],
     parameters: Type.Object({
       expression: Type.String({ description: "Expression or function source" }),
+      timeoutMs: Type.Optional(Type.Integer({ minimum: 1, maximum: 120000 })),
     }),
-    async execute(_id, params) {
+    async execute(_id, params, signal) {
       return serialize(async () => {
         const p = await ensurePage();
         // Playwright's evaluate(string) treats the string as an expression.
@@ -359,7 +432,7 @@ export default function browserExtension(pi: ExtensionAPI) {
           // Pi marks tool errors only when execute throws.
           throw new Error(`eval error: ${bounded(msg, 1900, 18).text}`);
         }
-      });
+      }, signal, params.timeoutMs ?? 30000);
     },
   });
 
@@ -382,7 +455,7 @@ export default function browserExtension(pi: ExtensionAPI) {
         }),
       ),
     }),
-    async execute(_id, params) {
+    async execute(_id, params, signal) {
       return serialize(async () => {
         const limit = params.limit ?? 100;
         const filter = params.filter;
@@ -401,7 +474,7 @@ export default function browserExtension(pi: ExtensionAPI) {
             )
             .join("\n") || "(empty)";
         return toolResult(text, { matched: filtered.length, selected: out.length, cleared: params.clear ?? true });
-      });
+      }, signal);
     },
   });
 
@@ -439,7 +512,7 @@ export default function browserExtension(pi: ExtensionAPI) {
         }),
       ),
     }),
-    async execute(_id, params) {
+    async execute(_id, params, signal) {
       return serialize(async () => {
         let entries = netBuf.slice();
         if (params.urlFilter) {
@@ -471,7 +544,7 @@ export default function browserExtension(pi: ExtensionAPI) {
         }
         const text = lines.join("\n") || "(empty)";
         return toolResult(text, { matched: entries.length, selected: out.length, cleared: params.clear ?? true });
-      });
+      }, signal);
     },
   });
 
@@ -485,7 +558,7 @@ export default function browserExtension(pi: ExtensionAPI) {
       selector: Type.String(),
       value: Type.String(),
     }),
-    async execute(_id, params) {
+    async execute(_id, params, signal) {
       return serialize(async () => {
         const p = await ensurePage();
         try {
@@ -495,7 +568,7 @@ export default function browserExtension(pi: ExtensionAPI) {
           throw new Error("Unable to fill input (value omitted). Check the selector and whether the input is editable.");
         }
         return toolResult(`filled ${params.selector}`);
-      });
+      }, signal);
     },
   });
 
@@ -509,12 +582,12 @@ export default function browserExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       selector: Type.String(),
     }),
-    async execute(_id, params) {
+    async execute(_id, params, signal) {
       return serialize(async () => {
         const p = await ensurePage();
         await p.click(params.selector);
         return toolResult(`clicked ${params.selector}`);
-      });
+      }, signal);
     },
   });
 
@@ -528,7 +601,7 @@ export default function browserExtension(pi: ExtensionAPI) {
     parameters: Type.Object({
       fullPage: Type.Optional(Type.Boolean()),
     }),
-    async execute(_id, params) {
+    async execute(_id, params, signal) {
       return serialize(async () => {
         const p = await ensurePage();
         const dir = mkdtempSync(join(tmpdir(), "pi-browser-"));
@@ -538,7 +611,7 @@ export default function browserExtension(pi: ExtensionAPI) {
           content: [{ type: "text", text: file }],
           details: { path: file },
         };
-      });
+      }, signal);
     },
   });
 
@@ -550,10 +623,10 @@ export default function browserExtension(pi: ExtensionAPI) {
       "Tear down the headless browser (rarely needed; auto-cleans on session end)",
     parameters: Type.Object({}),
     async execute() {
-      return serialize(async () => {
-        await teardown();
-        return toolResult("browser closed");
-      });
+      queueEpoch++;
+      runningAbort?.abort();
+      await teardown();
+      return toolResult("browser closed");
     },
   });
 

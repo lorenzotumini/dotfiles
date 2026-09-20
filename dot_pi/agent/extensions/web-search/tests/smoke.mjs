@@ -1,3 +1,5 @@
+import {readFile, rm, stat} from 'node:fs/promises';
+import {buildFilters, formatResults} from '../exa.mjs';
 import assert from 'node:assert/strict';
 import { search, buildQuery, MAX_RESPONSE_BYTES, ENDPOINT } from '../exa.mjs';
 let checks = 0;
@@ -14,7 +16,12 @@ async function run(response, args = { query: 'fixture' }) {
   });
   assert.ok(Buffer.byteLength(result.content[0].text) <= 16384);
   assert.ok(result.content[0].text.split('\n').length <= 400);
-  assert.ok(JSON.stringify(result.details).length < 200);
+  assert.ok(JSON.stringify(result.details).length < 400);
+  if (result.details.fullOutputPath) {
+    assert.ok((await readFile(result.details.fullOutputPath, 'utf8')).length > 0);
+    assert.equal((await stat(result.details.fullOutputPath)).mode & 0o777, 0o600);
+    await rm(result.details.fullOutputPath);
+  }
   checks++;
   return result;
 }
@@ -56,4 +63,27 @@ await assert.rejects(run(new Response('', {headers:{'content-length':String(MAX_
 const abort = new AbortController(); abort.abort();
 await assert.rejects(search({query:'x'}, abort.signal, () => { throw new Error('must not fetch'); }), /cancelled/); checks++;
 await assert.rejects(run(json({id:1,error:{message:'x'.repeat(50000)}})), error => Buffer.byteLength(error.message)<=2048); checks++;
-console.log(`PASS: ${checks} offline cases: query validation, no-key request, JSON/SSE streaming, Unicode/output limits, errors, HTTP rate limits, oversized-body cancellation and pre-abort.`);
+
+for (const args of [{includeDomains:['https://example.com/path']}, {startPublishedDate:'2026-02-30'}, {startPublishedDate:'2026-02-20',endPublishedDate:'2025-01-01'}, {maxAgeHours:-1}]) {
+  assert.throws(() => buildFilters(args)); checks++;
+}
+const filtered = await search({query:'documentation',includeDomains:['example.com'],startPublishedDate:'2026-01-01',maxAgeHours:0}, undefined, async (url, options) => {
+  assert.equal(url, ENDPOINT + '?tools=web_search_advanced_exa');
+  const body = JSON.parse(options.body);
+  assert.equal(body.params.name, 'web_search_advanced_exa');
+  assert.deepEqual(body.params.arguments.includeDomains, ['example.com']);
+  assert.equal(body.params.arguments.maxAgeHours, 0);
+  assert.equal(body.params.arguments.startPublishedDate, '2026-01-01');
+  return json(packet(JSON.stringify({results:[{title:'Doc',url:'https://example.com/doc',text:'Source text',publishedDate:'2026-01-02'}]})));
+});
+assert.match(filtered.content[0].text, /\[1\] Doc/); checks++;
+const mismatch = formatResults(JSON.stringify({results:[{url:'https://wrong.test/doc',text:'body'}]}), {includeDomains:['example.com'],startPublishedDate:'2026-01-01'});
+assert.match(mismatch, /outside.*domain/);
+assert.match(mismatch, /cannot be verified/); checks++;
+const midAbort = new AbortController();
+let bodyCancelled = false;
+const midPending = search({query:'cancellation fixture'}, midAbort.signal, async () => new Response(new ReadableStream({cancel(){bodyCancelled=true;}}), {headers:{'content-type':'application/json'}}));
+setTimeout(() => midAbort.abort(), 10);
+await assert.rejects(midPending, /cancelled/);
+assert.equal(bodyCancelled, true); checks++;
+console.log(`PASS: ${checks} search checks including advanced filters, validation, source formatting and recoverable truncation.`);
