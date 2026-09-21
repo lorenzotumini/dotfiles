@@ -1,14 +1,24 @@
-# Select the monitor-connected RTX 5060 Ti as Hyprland's renderer before the
-# compositor starts. Resolve the dynamic DRM card number from the GPU's PCI ID
-# at every login instead of assuming card0 or card1.
-for hypr_gpu_card in /sys/class/drm/card[0-9]*; do
-    [ -r "$hypr_gpu_card/device/vendor" ] || continue
-    [ -r "$hypr_gpu_card/device/device" ] || continue
-    IFS= read -r hypr_gpu_vendor < "$hypr_gpu_card/device/vendor"
-    IFS= read -r hypr_gpu_device < "$hypr_gpu_card/device/device"
-    if [ "$hypr_gpu_vendor" = "0x10de" ] && [ "$hypr_gpu_device" = "0x2d04" ]; then
-        export AQ_DRM_DEVICES="/dev/dri/${hypr_gpu_card##*/}"
-        break
-    fi
+# Select the NVIDIA DRM card that owns a connected display before Hyprland
+# starts. Resolve the dynamic DRM card number at every login instead of
+# assuming card0/card1 or a particular PCI slot.
+hypr_selected_drm=""
+for hypr_status in /sys/class/drm/card[0-9]*-*/status; do
+    [ -f "$hypr_status" ] || continue
+    [ "$(cat "$hypr_status")" = connected ] || continue
+
+    hypr_connector_dir=${hypr_status%/status}
+    hypr_connector=${hypr_connector_dir##*/}
+    hypr_card=${hypr_connector%%-*}
+
+    [ -r "/sys/class/drm/$hypr_card/device/vendor" ] || continue
+    [ "$(cat "/sys/class/drm/$hypr_card/device/vendor")" = 0x10de ] || continue
+
+    hypr_selected_drm="/dev/dri/$hypr_card"
+    break
 done
-unset hypr_gpu_card hypr_gpu_vendor hypr_gpu_device
+
+if [ -n "$hypr_selected_drm" ]; then
+    export AQ_DRM_DEVICES="$hypr_selected_drm"
+fi
+
+unset hypr_status hypr_connector_dir hypr_connector hypr_card hypr_selected_drm

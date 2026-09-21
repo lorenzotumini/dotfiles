@@ -99,6 +99,9 @@ hl.config({
     misc = {
         force_default_wallpaper = 0,
         disable_hyprland_logo = true,
+        -- Let the shell reclaim an orphaned session lock after a crash.
+        -- This does not clear the lock or bypass password authentication.
+        allow_session_lock_restore = true,
         mouse_move_enables_dpms = true,
         key_press_enables_dpms = true,
     },
@@ -137,7 +140,7 @@ local function bind(keys, dispatcher, description, options)
 end
 
 -- Programs and session controls.
-bind("SUPER + SUPER_L", hl.dsp.exec_cmd(home .. "/.local/bin/power-menu"), "Power menu", { release = true })
+bind("SUPER + ALT + SUPER_L", hl.dsp.exec_cmd(home .. "/.local/bin/power-menu"), "Power menu", { release = true })
 bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal), "Terminal")
 bind(mainMod .. " + Q", hl.dsp.window.close(), "Close window")
 bind(mainMod .. " + D", hl.dsp.exec_cmd(menu), "Application launcher")

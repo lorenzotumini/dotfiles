@@ -68,27 +68,22 @@
   },
   "profiles": [
     {
-      "id": "qwen3.5-4b", "name": "Fast · Qwen3.5 4B · 32K", "model": "qwen35-4b",
-      "context": 32768, "maxOutput": 8192, "defaultThinking": "off", "vision": true,
+      "id": "qwen3.5-4b", "name": "FAST · Qwen3.5 4B · 64K", "model": "qwen35-4b",
+      "context": 65536, "maxOutput": 16384, "defaultThinking": "off", "vision": true,
       "runtime": { "device": "CUDA0", "split-mode": "none", "cache-type-k": "q8_0", "cache-type-v": "q8_0" }
     },
     {
-      "id": "qwen3.8-27b-gsq", "name": "General / code · Qwen3.8 GSQ · 64K", "model": "qwen38-gsq",
+      "id": "qwen3.8-27b-q4", "name": "GENERAL · Qwen3.8 Unsloth Q4 · 64K", "model": "qwen38-q4",
       "context": 65536, "maxOutput": 32768, "defaultThinking": "medium", "vision": true,
       "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3 }
     },
     {
-      "id": "qwen3.8-27b-q4", "name": "Qwen3.8 Unsloth Q4 · 64K", "model": "qwen38-q4",
-      "context": 65536, "maxOutput": 32768, "defaultThinking": "medium", "vision": true,
-      "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3 }
-    },
-    {
-      "id": "qwen3.8-27b-gsq-long", "name": "Long context · Qwen3.8 GSQ · 128K", "model": "qwen38-gsq",
+      "id": "qwen3.8-27b-gsq", "name": "LONG CTX · Qwen3.8 GSQ · 128K", "model": "qwen38-gsq",
       "context": 131072, "maxOutput": 32768, "defaultThinking": "medium", "vision": true,
       "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q4_0", "cache-type-v": "q4_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3 }
     },
     {
-      "id": "qwen3.8-27b-orca", "name": "Unrestricted · OrcaRouter Qwen3.8 · 64K", "model": "qwen38-orca",
+      "id": "qwen3.8-27b-orca", "name": "UNRESTRICTED · OrcaRouter Qwen3.8 · 64K", "model": "qwen38-orca",
       "context": 65536, "maxOutput": 32768, "defaultThinking": "off", "vision": true,
       "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "none" }
     }

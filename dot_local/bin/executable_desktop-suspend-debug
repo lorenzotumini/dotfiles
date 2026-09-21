@@ -1,0 +1,134 @@
+#!/bin/bash
+# Temporary, private capture of suspend/display failures; never locks or suspends.
+set -eu
+umask 077
+
+unit=desktop-suspend-debug.service
+base="${XDG_STATE_HOME:-$HOME/.local/state}/desktop-suspend-debug"
+
+snapshot() {
+  {
+    date --iso-8601=seconds
+    timeout 3s hyprctl monitors -j || true
+    systemctl --user show desktop-core-shell.service \
+      -p ActiveState -p SubState -p MainPID -p NRestarts -p Result || true
+  } >>"$capture_dir/state.log" 2>&1
+}
+
+case ${1:-status} in
+  start)
+    if systemctl --user is-active --quiet "$unit"; then
+      printf 'Capture is already running. Use desktop-suspend-debug stop first.\n'
+      exit 1
+    fi
+    instance=${HYPRLAND_INSTANCE_SIGNATURE:-}
+    if [[ ! $instance =~ ^[a-zA-Z0-9_-]+$ ]]; then
+      printf 'Start the capture from a terminal inside Hyprland.\n' >&2
+      exit 1
+    fi
+    timeout 3s hyprctl getoption debug:disable_logs >/dev/null
+    mkdir -p "$base"
+    capture_dir=$(mktemp -d "$base/$(date +%Y%m%d-%H%M%S)-XXXXXX")
+    systemctl --user reset-failed "$unit" 2>/dev/null || true
+    systemd-run --user --collect --unit="$unit" \
+      --description='Temporary suspend/display diagnostic capture' \
+      --property=RuntimeMaxSec=20min --property=TimeoutStopSec=15s \
+      --property=UMask=0077 \
+      --setenv="HYPRLAND_INSTANCE_SIGNATURE=$instance" \
+      "$(readlink -f "$0")" _capture "$capture_dir"
+    ln -sfn -- "${capture_dir##*/}" "$base/latest"
+    printf 'Capture: %s\nStops after 20 minutes of runtime or 100 MiB.\n' "$capture_dir"
+    ;;
+  stop)
+    systemctl --user stop "$unit"
+    printf 'Capture stopped; saved logs remain in %s/latest\n' "$base"
+    ;;
+  status)
+    printf 'Latest capture: %s\n' "$(readlink -f "$base/latest" 2>/dev/null || true)"
+    systemctl --user --no-pager status "$unit"
+    ;;
+  _capture)
+    capture_dir=${2:?missing capture directory}
+    [[ -d $capture_dir && -O $capture_dir ]] || exit 1
+    hypr_log="${XDG_RUNTIME_DIR:?}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:?}/hyprland.log"
+    [[ -f $hypr_log ]] || { printf 'Hyprland log not found: %s\n' "$hypr_log" >&2; exit 1; }
+    previous=$(timeout 3s hyprctl -j getoption debug:disable_logs | jq -r '.bool')
+    previous_time=$(timeout 3s hyprctl -j getoption debug:disable_time | jq -r '.bool')
+    [[ $previous == true || $previous == false ]] || exit 1
+    [[ $previous_time == true || $previous_time == false ]] || exit 1
+    children=()
+    cleanup() {
+      trap - EXIT TERM INT
+      for child in "${children[@]}"; do kill "$child" 2>/dev/null || true; done
+      wait 2>/dev/null || true
+      timeout 3s hyprctl eval "hl.config({ debug = { disable_logs = $previous, disable_time = $previous_time } })" \
+        >>"$capture_dir/capture.log" 2>&1 || true
+      snapshot
+      printf 'Capture ended: %s\n' "$(date --iso-8601=seconds)" >>"$capture_dir/capture.log"
+      sync -d "$capture_dir"/* 2>/dev/null || true
+    }
+    trap cleanup EXIT
+    trap 'exit 0' TERM INT
+    {
+      printf 'Capture started: %s\n' "$(date --iso-8601=seconds)"
+      printf 'Previous debug.disable_logs=%s\n' "$previous"
+      printf 'Previous debug.disable_time=%s\n' "$previous_time"
+      uname -r
+      pacman -Q hyprland aquamarine quickshell nvidia-utils qt6-base qt6-wayland || true
+      rg 'PreserveVideoMemoryAllocations|UseKernelSuspendNotifiers|TemporaryFilePath' \
+        /proc/driver/nvidia/params || true
+      timeout 3s hyprctl getoption misc:allow_session_lock_restore || true
+    } >"$capture_dir/capture.log" 2>&1
+    timeout 3s hyprctl eval 'hl.config({ debug = { disable_logs = false, disable_time = false } })' \
+      >>"$capture_dir/capture.log" 2>&1
+    # No WAYLAND_DEBUG: raw protocol traces can contain keyboard input.
+    # Capture the compositor's diagnostic file and relevant journal entries.
+    tail -n 100 -F --sleep-interval=0.2 "$hypr_log" \
+      >"$capture_dir/hyprland.log" 2>&1 &
+    children+=("$!")
+    journalctl --follow --lines=60 --output=short-precise --no-pager \
+      _COMM=quickshell + _COMM=Hyprland + _TRANSPORT=kernel \
+      + _COMM=systemd-sleep + _SYSTEMD_UNIT=systemd-suspend.service \
+      + _SYSTEMD_USER_UNIT=desktop-core-shell.service \
+      + _SYSTEMD_USER_UNIT=desktop-core-sleep-lock.service \
+      >"$capture_dir/journal.log" 2>&1 &
+    children+=("$!")
+    snapshot
+    old_connectors=''
+    ticks=0
+    while true; do
+      connectors=$(
+        for status in /sys/class/drm/card[0-9]*-*/status; do
+          [[ -r $status ]] || continue
+          printf '%s=%s\n' "$status" "$(<"$status")"
+        done
+      )
+      if [[ $connectors != "$old_connectors" ]]; then
+        printf '%s\n%s\n' "$(date --iso-8601=seconds)" "$connectors" >>"$capture_dir/connectors.log"
+        old_connectors=$connectors
+        snapshot
+      elif (( ticks % 15 == 0 )); then
+        snapshot
+      fi
+      # Flush regularly so a later forced reboot is less likely to lose evidence.
+      sync -d "$capture_dir"/* 2>/dev/null || true
+      size=$(du -sk "$capture_dir" | cut -f1)
+      if (( size >= 102400 )); then
+        printf 'Size limit reached.\n' >>"$capture_dir/capture.log"
+        break
+      fi
+      for child in "${children[@]}"; do
+        if ! kill -0 "$child" 2>/dev/null; then
+          printf 'A log reader exited; stopping capture.\n' >>"$capture_dir/capture.log"
+          exit 1
+        fi
+      done
+      ticks=$((ticks + 1))
+      sleep 2
+    done
+    ;;
+  *)
+    printf 'Usage: desktop-suspend-debug start|stop|status\n' >&2
+    exit 2
+    ;;
+esac
