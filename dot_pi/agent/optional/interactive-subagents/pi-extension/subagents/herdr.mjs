@@ -86,10 +86,13 @@ export function createHerdrBackend({
     const marker = /; echo '__SUBAGENT_DONE_'\$\?'__'$/;
     if (!marker.test(command)) throw new Error('Unsupported launch command: missing exit-status trailer');
     const invocation = command.replace(marker, '');
-    const body = `${invocation}\npi_child_status=$?\nprintf '%s\\n' "$pi_child_status" > ${shellEscape(donePath + '.tmp')}\nmv -- ${shellEscape(donePath + '.tmp')} ${shellEscape(donePath)}\nexit "$pi_child_status"\n`;
+    const shDone = donePath.replace(/\\/g, '/');
+    const body = `${invocation}\npi_child_status=$?\nprintf '%s\\n' "$pi_child_status" > ${shellEscape(shDone + '.tmp')}\nmv -- ${shellEscape(shDone + '.tmp')} ${shellEscape(shDone)}\nexit "$pi_child_status"\n`;
     writeFileSync(path, `#!/usr/bin/env bash\numask 077\n${preamble}\n${body}`, { mode: 0o600, flag: 'wx' });
     completionFiles.set(pane, donePath);
-    try { sendCommand(pane, `bash ${shellEscape(path)}`); }
+    const shPath = path.replace(/\\/g, '/');
+    const runner = process.platform === 'win32' ? 'sh' : 'bash';
+    try { sendCommand(pane, `${runner} ${shellEscape(shPath)}`); }
     catch (error) { completionFiles.delete(pane); throw error; }
     return path;
   }

@@ -27,9 +27,8 @@ import {
 } from "./surface.ts";
 import { boundedText } from "./bounds.mjs";
 
-// Fixed read-only scout is the installed default. The opt-out is used only by
-// upstream regression tests for the original agent-discovery behavior.
-const HERDR_TRIAL = process.env.PI_SUBAGENT_HERDR_TRIAL !== "0";
+// Fixed read-only scout is opt-in via PI_SUBAGENT_HERDR_TRIAL=1.
+const HERDR_TRIAL = process.env.PI_SUBAGENT_HERDR_TRIAL === "1";
 
 import {
   countSessionEntryLines,
@@ -1198,7 +1197,7 @@ async function launchSubagent(
 
   const agentDefs = params.agent ? loadAgentDefaults(params.agent) : null;
   const effectiveModel = params.model ?? agentDefs?.model ??
-    (HERDR_TRIAL && ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined);
+    (ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined);
   if (HERDR_TRIAL && !effectiveModel) throw new Error("Select a model before spawning the trial scout");
   const effectiveTools = agentDefs?.tools;
   const effectiveSkills = agentDefs?.skills;
