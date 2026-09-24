@@ -19,8 +19,9 @@
  * explanation (the user reads this file live).
  *
  * Commands:
- *   /md-log <filepath>  — Link a markdown file and backfill the session.
- *   /md-unlog           — Stop logging.
+ *   /md-log              — Toggle logging; prompts for a file when enabling.
+ *   /md-log:link <path>  — Link or change the markdown file.
+ *   /md-log:status       — Show the current link.
  *
  * Append-only. No send-back-to-agent functionality (that lived in the old
  * .md-link extension this was modeled on).
@@ -278,59 +279,84 @@ export default function mdLog(pi: ExtensionAPI) {
 
 	// --- Commands ---
 
+	function unlink(ctx: any): void {
+		if (!logFile) {
+			if (ctx.hasUI) ctx.ui.notify("Markdown logging is already off", "warning");
+			return;
+		}
+		const name = path.basename(logFile);
+		logFile = null;
+		pi.appendEntry("md-log", { file: null });
+		ctx.ui.setStatus("md-log", undefined);
+		if (ctx.hasUI) ctx.ui.notify(`Unlinked: ${name}`, "info");
+	}
+
+	async function link(filepath: string, ctx: any): Promise<void> {
+		const resolved = path.isAbsolute(filepath) ? filepath : path.resolve(ctx.cwd, filepath);
+		if (!fs.existsSync(resolved)) {
+			if (ctx.hasUI) ctx.ui.notify(`File does not exist: ${resolved}`, "error");
+			return;
+		}
+		if (!fs.statSync(resolved).isFile()) {
+			if (ctx.hasUI) ctx.ui.notify(`Not a file: ${resolved}`, "error");
+			return;
+		}
+
+		logFile = resolved;
+		pi.appendEntry("md-log", { file: resolved });
+		const written = backfill(ctx);
+		ctx.ui.setStatus("md-log", ctx.ui.theme.fg("dim", path.basename(resolved)));
+		if (ctx.hasUI) ctx.ui.notify(`Linked: ${resolved} (${written} entries backfilled)`, "success");
+	}
+
 	pi.registerCommand("md-log", {
-		description: "Mirror the session to a markdown file (backfills history)",
+		description: "Toggle markdown session logging; prompts for a file when enabling",
 		handler: async (args, ctx: any) => {
-			const filepath = args.trim();
-			if (!filepath) {
-				ctx.ui.notify("Usage: /md-log <filepath>", "warning");
+			if (args.trim()) {
+				if (ctx.hasUI) ctx.ui.notify("Use /md-log to toggle, or /md-log:link <path> to choose a file.", "warning");
+				return;
+			}
+			if (logFile) {
+				unlink(ctx);
 				return;
 			}
 			if (typeof ctx.isIdle === "function" && !ctx.isIdle()) {
-				ctx.ui.notify("Wait for the agent to finish before linking.", "warning");
+				if (ctx.hasUI) ctx.ui.notify("Wait for the agent to finish before linking.", "warning");
 				return;
 			}
-
-			const resolved = path.isAbsolute(filepath) ? filepath : path.resolve(ctx.cwd, filepath);
-
-			// The file must already exist — /md-log links into an existing note,
-			// it never creates one. This avoids silently scattering new files
-			// (and parent directories) around the vault from a typo'd path.
-			if (!fs.existsSync(resolved)) {
-				ctx.ui.notify(`File does not exist: ${resolved}`, "error");
-				return;
-			}
-			if (!fs.statSync(resolved).isFile()) {
-				ctx.ui.notify(`Not a file: ${resolved}`, "error");
-				return;
-			}
-
-			logFile = resolved;
-			pi.appendEntry("md-log", { file: resolved });
-
-			// Backfill the active branch.
-			const written = backfill(ctx);
-
-			ctx.ui.setStatus(
-				"md-log",
-				ctx.ui.theme.fg("dim", path.basename(resolved)),
-			);
-			ctx.ui.notify(`Linked: ${resolved} (${written} entries backfilled)`, "success");
+			if (!ctx.hasUI) return;
+			const target = (await ctx.ui.editor("Existing Markdown file to log"))?.trim() ?? "";
+			if (!target) return;
+			await link(target, ctx);
 		},
 	});
 
-	pi.registerCommand("md-unlog", {
-		description: "Stop mirroring the session to a markdown file",
-		handler: async (_args, ctx) => {
-			if (!logFile) {
-				ctx.ui.notify("No file linked", "warning");
+	pi.registerCommand("md-log:link", {
+		description: "Link or change the markdown file used by md-log",
+		handler: async (args, ctx: any) => {
+			const filepath = args.trim();
+			if (!filepath) {
+				if (ctx.hasUI) ctx.ui.notify("Usage: /md-log:link <existing-markdown-file>", "warning");
 				return;
 			}
-			const name = path.basename(logFile);
-			logFile = null;
-			pi.appendEntry("md-log", { file: null });
-			ctx.ui.setStatus("md-log", undefined);
-			ctx.ui.notify(`Unlinked: ${name}`, "info");
+			if (typeof ctx.isIdle === "function" && !ctx.isIdle()) {
+				if (ctx.hasUI) ctx.ui.notify("Wait for the agent to finish before linking.", "warning");
+				return;
+			}
+			await link(filepath, ctx);
+		},
+	});
+
+	pi.registerCommand("md-log:status", {
+		description: "Show the current markdown logging state",
+		handler: async (args, ctx) => {
+			if (args.trim()) {
+				if (ctx.hasUI) ctx.ui.notify("Usage: /md-log:status", "warning");
+				return;
+			}
+			if (ctx.hasUI) {
+				ctx.ui.notify(logFile ? `Logging to: ${logFile}` : "Markdown logging is off", "info");
+			}
 		},
 	});
 
@@ -440,4 +466,3 @@ export default function mdLog(pi: ExtensionAPI) {
 		return count;
 	}
 }
-

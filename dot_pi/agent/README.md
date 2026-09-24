@@ -32,9 +32,9 @@ packages. The `researcher` subagent is bundled with interactive-subagents and
 uses the existing `web_search`, `web_fetch`, and `safe_bash` tools.
 
 The `md-log` extension has no AI-facing tools, so its user commands remain
-available independently of learning mode. Use `/md-log <existing-markdown-file>`
-to mirror a session to a note, and `/md-unlog` to stop. The log file must already
-exist.
+available independently of learning mode. Bare `/md-log` toggles logging; when
+enabling, it asks for an existing Markdown file. Use `/md-log:link <path>` to
+link or change the file and `/md-log:status` to inspect the state.
 
 The interactive-subagents integration is deployed on Windows and Linux. Normal
 Pi enables it when launched inside Herdr; `pi-lean` loads it but keeps it off
