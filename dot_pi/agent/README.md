@@ -21,10 +21,25 @@ For PDF and YouTube helpers, install their dependencies into local environments
 rather than this config tree. Chezmoi ignores `.venv/`, Python caches and
 `node_modules/`.
 
-The optional Herdr subagent integration is Linux/Herdr-only and is omitted by
-chezmoi on Windows. Normal Pi enables it inside Herdr; `pi-lean` loads it but
-keeps it off until `/subagents` is toggled on. Observational memory is normal-Pi-only and
-remains off until `/om` is toggled on.
+## Learning tools
+
+The teaching guide and `quiz` extension support learning sessions. Use `/learn`
+to toggle learning mode and quiz access; `/learn:status` reports the current
+mode. The guide is kept outside Pi's skills directory and is loaded only while
+learning mode is on. The mode is off by default and follows the active session
+branch. These features use Pi's existing APIs and require no additional
+packages. The `researcher` subagent is bundled with interactive-subagents and
+uses the existing `web_search`, `web_fetch`, and `safe_bash` tools.
+
+The `md-log` extension has no AI-facing tools, so its user commands remain
+available independently of learning mode. Use `/md-log <existing-markdown-file>`
+to mirror a session to a note, and `/md-unlog` to stop. The log file must already
+exist.
+
+The interactive-subagents integration is deployed on Windows and Linux. Normal
+Pi enables it when launched inside Herdr; `pi-lean` loads it but keeps it off
+until `/subagents` is toggled on. Observational memory remains Linux-only and
+normal-Pi-only, off until `/om` is toggled on.
 
 After applying or changing extensions, restart Pi or use `/reload` as appropriate.
 
