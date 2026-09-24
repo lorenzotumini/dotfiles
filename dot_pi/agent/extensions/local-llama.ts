@@ -3,10 +3,53 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { apiKey, assertProfile, catalog, checkFiles, decorateModel, profileReloadHint, readConfig, request, requestPayload, serverUrl, verifyLoaded } from '../local-llama/core.mjs';
 import { ensureRouter, paths, reloadRouter } from '../local-llama/router.mjs';
 
+type LlamaMetrics = { promptTokens: number; promptSeconds: number; generatedTokens: number; generatedSeconds: number };
+
+async function readLlamaMetrics(config: ReturnType<typeof readConfig>, modelId: string): Promise<LlamaMetrics> {
+  const response = await fetch(`${serverUrl(config)}/metrics?model=${encodeURIComponent(modelId)}`, {
+    headers: { Authorization: `Bearer ${apiKey(config)}` },
+    signal: AbortSignal.timeout(2000),
+  });
+  if (!response.ok) throw new Error(`llama.cpp metrics HTTP ${response.status}`);
+  const body = await response.text();
+  const read = (name: string): number => {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const line = body.split('\n').find((entry) => new RegExp(`^${escaped}(?:\\{[^}]*\\})?\\s`).test(entry));
+    const value = line && line.match(/^\S+(?:\{[^}]*\})?\s+([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)/)?.[1];
+    const parsed = value === undefined ? NaN : Number(value);
+    if (!Number.isFinite(parsed)) throw new Error(`llama.cpp metrics omitted ${name}`);
+    return parsed;
+  };
+  return {
+    promptTokens: read('llamacpp:prompt_tokens_total'),
+    promptSeconds: read('llamacpp:prompt_seconds_total'),
+    generatedTokens: read('llamacpp:tokens_predicted_total'),
+    generatedSeconds: read('llamacpp:tokens_predicted_seconds_total'),
+  };
+}
+
+function rate(before: number, after: number): number | undefined {
+  const tokens = after - before;
+  return tokens >= 0 ? tokens : undefined;
+}
+
+function throughput(before: LlamaMetrics, after: LlamaMetrics): string | undefined {
+  const promptTokens = rate(before.promptTokens, after.promptTokens);
+  const promptSeconds = after.promptSeconds - before.promptSeconds;
+  const generatedTokens = rate(before.generatedTokens, after.generatedTokens);
+  const generatedSeconds = after.generatedSeconds - before.generatedSeconds;
+  if (promptTokens === undefined || generatedTokens === undefined || promptSeconds <= 0 || generatedSeconds <= 0) return undefined;
+  const prefill = Math.round(promptTokens / promptSeconds);
+  const generation = Math.round(generatedTokens / generatedSeconds);
+  return `prefill ${prefill} tok/s · gen ${generation} tok/s`;
+}
+
 export default function localLlama(pi: ExtensionAPI) {
   let config: ReturnType<typeof readConfig>;
   let base: any;
   let operation: AbortController | undefined;
+  const metricBaselines = new Map<string, LlamaMetrics>();
+  const lastThroughput = new Map<string, string>();
 
   function install(ctx: ExtensionContext) {
     config = readConfig();
@@ -38,7 +81,7 @@ export default function localLlama(pi: ExtensionAPI) {
 
   function status(ctx: ExtensionContext) {
     const p = ctx.model?.provider === 'llama.cpp' && config?.profiles.find((p: any) => p.id === ctx.model?.id);
-    ctx.ui.setStatus('local-llama', p ? `local ${p.context / 1024}K · ${pi.getThinkingLevel()}` : undefined);
+    ctx.ui.setStatus('local-llama', p ? lastThroughput.get(p.id) ?? 'prefill — · gen —' : undefined);
   }
 
   async function refresh(ctx: ExtensionContext, signal: AbortSignal) {
@@ -56,6 +99,22 @@ export default function localLlama(pi: ExtensionAPI) {
   pi.on('thinking_level_select', (_event, ctx) => status(ctx));
   pi.on('session_shutdown', () => operation?.abort());
 
+  pi.on('message_end', async (event, ctx) => {
+    const message = event.message;
+    if (message.role !== 'assistant' || message.provider !== 'llama.cpp' || !config) return;
+    const before = metricBaselines.get(message.model);
+    metricBaselines.delete(message.model);
+    if (!before) return;
+    try {
+      const after = await readLlamaMetrics(config, message.model);
+      const latest = throughput(before, after);
+      if (latest) lastThroughput.set(message.model, latest);
+      status(ctx);
+    } catch {
+      // Metrics are supplementary; do not interrupt or warn on a completed answer.
+    }
+  });
+
   pi.on('before_provider_request', async (event, ctx) => {
     if (ctx.model?.provider !== 'llama.cpp' || !config) return;
     const p = config.profiles.find((p: any) => p.id === ctx.model?.id);
@@ -63,6 +122,8 @@ export default function localLlama(pi: ExtensionAPI) {
     try {
       if (ctx.model.contextWindow !== p.context || ctx.model.maxTokens !== p.maxOutput) throw new Error(`Local model metadata is stale or overridden in models.json. ${profileReloadHint(p)}`);
       await verifyLoaded(config, p, ctx.signal);
+      try { metricBaselines.set(p.id, await readLlamaMetrics(config, p.id)); }
+      catch { metricBaselines.delete(p.id); }
       return requestPayload(config, p, event.payload, ctx.thinkingLevel ?? pi.getThinkingLevel());
     } catch (error) {
       // Pi reports hook errors and continues. Abort the turn as well to prevent a stale request being sent.

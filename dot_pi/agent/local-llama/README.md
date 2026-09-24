@@ -20,6 +20,11 @@ After applying chezmoi, restart Pi or run `/reload`, then:
 
 Use the picker to select profiles; discrete actions use colon commands.
 
+The status bar shows the latest llama.cpp prefill and generation throughput.
+Rates are calculated from server metrics around each local model response; if
+multiple Pi sessions send requests to the shared router at once, a sample can
+include nearby traffic from another session.
+
 Selecting a profile starts the static `pi-local-llama.service` user unit
 automatically if nothing is listening. The router stays available across Pi
 restarts and project changes, then systemd stops it when the user manager shuts
