@@ -6,7 +6,7 @@ export function registerCompactCommand(pi: ExtensionAPI, runtime: Runtime): void
 		description: "Force an observational-memory compaction now (ignores threshold)",
 		handler: async (_args: string, ctx: any) => {
 			if (!runtime.enabled) {
-				if (ctx.hasUI) ctx.ui.notify("om is off (use /om on to enable)", "info");
+				if (ctx.hasUI) ctx.ui.notify("om is off (toggle with /om to enable)", "info");
 				return;
 			}
 			if (runtime.compactInFlight) {

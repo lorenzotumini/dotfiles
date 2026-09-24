@@ -66,6 +66,9 @@ env/
 !.env.example
 
 # --- Project Specific ---
+# Keep this workstation-specific troubleshooting report local. chezmoi still
+# manages it under ~/.config/desktop, but it should not be published upstream.
+dot_config/desktop/suspend-resume-investigation.md
 # GlazeWM / Zebar logs (already in .chezmoiignore, but good to have here too)
 .glzr/glazewm/errors.log
 .glzr/zebar/errors.log

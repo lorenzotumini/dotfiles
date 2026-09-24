@@ -7,9 +7,7 @@ active by default. Outside Herdr they stay hidden and cannot create panes.
 
 ```text
 /subagents        # toggle
-/subagents on
-/subagents status
-/subagents off
+/subagents:status
 ```
 
 The gate persists on the active session branch, separately for main and lean
@@ -21,6 +19,8 @@ Try inside Herdr:
 ```text
 /subagents:spawn trial-scout Map the source directories and test entry points. Do not modify anything.
 ```
+
+The bare command toggles; `:status` reports state and `:spawn` starts a scout.
 
 The proven trial limits remain: one read-only scout at a time, no nested spawning,
 no copied parent history, parent-selected model by default, right-hand sibling

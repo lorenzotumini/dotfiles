@@ -459,8 +459,8 @@ export default function (pi: ExtensionAPI) {
 	}
 	function statusText(): string {
 		return disabled
-			? "bash-guard OFF: no approval prompts; hard-block floor remains active. Use /bash-guard on for prompts."
-			: "bash-guard ON: flagged bash commands require approval. Use /bash-guard off for floor-only protection.";
+			? "bash-guard OFF: no approval prompts; hard-block floor remains active. Use /bash-guard to toggle prompts on."
+			: "bash-guard ON: flagged bash commands require approval. Use /bash-guard to toggle prompts off.";
 	}
 
 	pi.on("session_start", async (_event, ctx) => {
@@ -469,22 +469,34 @@ export default function (pi: ExtensionAPI) {
 		updateStatus(ctx);
 	});
 
-	pi.registerCommand("bash-guard", {
-		description: "Bash approvals: on, off (default; hard-block floor stays active), status, or bare command to toggle.",
-		handler: async (args, ctx) => {
+	const handleBashGuardCommand = async (args: string, ctx: ExtensionContext) => {
 			const action = args.trim().toLowerCase();
-			if (!["", "on", "off", "status"].includes(action)) {
-				ctx.ui.notify("Usage: /bash-guard [on|off|status]", "warning");
+			if (action === "status") {
+				ctx.ui.notify(statusText(), "info");
 				return;
 			}
-			if (action !== "status") {
-				disabled = action === "" ? !disabled : action === "off";
-				recentlyAborted.clear();
-				updateStatus(ctx);
+			if (action !== "") {
+				ctx.ui.notify("Use /bash-guard to toggle, or /bash-guard:status to inspect state.", "warning");
+				return;
 			}
+			disabled = !disabled;
+			recentlyAborted.clear();
+			updateStatus(ctx);
 			ctx.ui.notify(statusText(), "info");
-		},
+	};
+	pi.registerCommand("bash-guard", {
+		description: "Bash approvals: on, off (default; hard-block floor stays active), status, or bare command to toggle.",
+		handler: handleBashGuardCommand,
 	});
+	for (const action of ["status"]) {
+		pi.registerCommand(`bash-guard:${action}`, {
+			description: `Bash approval ${action}`,
+			handler: async (args, ctx) => {
+				if (args.trim()) { ctx.ui.notify(`Usage: /bash-guard:${action}`, "warning"); return; }
+				await handleBashGuardCommand(action, ctx);
+			},
+		});
+	}
 
 	// Avoid annoying retry loops: if the exact command was aborted recently, auto-block it.
 	const recentlyAborted = new Map<string, number>();
@@ -505,7 +517,7 @@ export default function (pi: ExtensionAPI) {
 						reason:
 							`Blocked by bash-guard (hard-block floor): ${reason}. ` +
 							"Even with bash-guard disabled, this pattern is considered too destructive to run unattended. " +
-							"Enable approval prompts with /bash-guard on and confirm interactively, or propose a safer alternative.",
+							"Enable approval prompts with /bash-guard and confirm interactively, or propose a safer alternative.",
 					};
 				}
 			}

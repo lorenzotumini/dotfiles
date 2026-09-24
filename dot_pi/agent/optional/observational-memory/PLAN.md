@@ -18,7 +18,7 @@ Priorities: **performance > speed >= cost**. Cost is the least important factor.
 | L4 | **Extension structure** | **One shared agent extension, env-parameterized by worker type** (`OM_WORKER=observer\|consolidator`), mirroring yt-edit's `FINALIZE_MODE` switch. Plus a separate **master-side orchestrator** extension. |
 | L5 | **Timestamp-id** | **Orchestrator-assigned**, anchored to the chunk's source-entry times, with a deterministic disambiguator suffix. The observer emits minute-resolution event times (OM-proven); the orchestrator derives the precise unique id at commit. Avoids the LLM copy-fidelity risk (design risk 7). |
 | L6 | **Dev default models** | **Strong model everywhere** for bring-up: `anthropic/claude-sonnet-4-6`, `thinking: low` for observers, `thinking: medium` for the consolidator. Fully overridable in config; tune the cheap-observer split later. |
-| L7 | **Per-session on/off gate** | A simple **default-OFF** master switch (`/om`, `/om on/off`), persisted per-session in the ledger. When off the extension is completely inert/invisible. Needed because it ships in the global extensions folder during development. See A2a. |
+| L7 | **Per-session on/off gate** | A simple **default-OFF** master switch (`/om` toggles; `/om:status` inspects state), persisted per-session in the ledger. When off the extension is completely inert/invisible. Needed because it ships in the global extensions folder during development. See A2a. |
 
 ### Phasing consequence to keep in mind (stated explicitly)
 
@@ -197,7 +197,7 @@ Goal: a working observer → ledger → injection → compaction loop that is co
 - **State:** persisted per-session via `pi.appendEntry("om.enabled", { enabled })`. On
   `session_start`, scan the branch backwards for the latest `om.enabled` entry; default
   `false` if none. Survives restarts/resume within that session lineage.
-- **Command:** `/om` toggles; `/om on` / `/om off` set explicitly. On change: append the state
+- **Command:** `/om` toggles the gate. On change: append the state
   entry, attach/detach TUI, `ctx.ui.notify("om enabled/disabled")`.
 - **Gate semantics:** when `enabled === false` the extension is **completely invisible and
   does nothing** — every trigger (`turn_end` observer clock, `agent_end` compaction trigger),
@@ -319,7 +319,7 @@ pi --no-extensions --no-skills --no-prompt-templates --no-context-files \
   error (+message). All gated on `ctx.hasUI`.
 
 ### A8. Commands (debug + control)
-- `/om`, `/om on`, `/om off`: the on/off gate (A2a).
+- `/om`: the on/off gate (A2a).
 - `/om:status`: in-flight workers, observation count, next-observer token progress, live
   context usage vs `compactAtContextTokens`, last worker error. Reports "om is off" when gated off.
 - `/om:compact`: force `ctx.compact()` now (ignores threshold). No-op when gated off.
@@ -487,7 +487,7 @@ Namespace `observational-memory` under `~/.pi/agent/settings.json` and project
 1. Scaffold package + tsconfig + vitest.
 2. Vendor & trim ledger/tokens/ids/serialize/debug-log; port + prune tests.
 3. Orchestrator skeleton + config + runtime + TUI status controller (footer).
-3a. Per-session on/off gate (default OFF): `om.enabled` state, `/om` `/om on` `/om off`,
+3a. Per-session on/off gate (default OFF): `om.enabled` state, `/om`,
     outermost `if (!enabled) return;` guard in every handler.
 4. `spawn/launch.ts` + `spawn/runs.ts` (IPC) + smoke test.
 5. Worker agent extension (observer mode) + `record_observations` terminal tool.

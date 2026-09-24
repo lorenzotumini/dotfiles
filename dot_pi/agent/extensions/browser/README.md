@@ -2,7 +2,7 @@
 
 Interactive Playwright tools for live frontend inspection. Only the small
 `browser_enable` loader is active by default; it makes the other nine tools
-available on the next model call. `/browser on/off` remains available.
+available on the next model call. The space forms remain aliases.
 
 ## Install / enable
 
@@ -19,14 +19,11 @@ In Pi:
 
 ```
 /reload
-/browser          # toggle (enable, or disable + close)
-/browser on       # enable interactive tools
-/browser off      # disable + close Chromium, clear buffers
-/browser status   # status
+/browser          # toggle
+/browser:status   # show status
 ```
 
-`on`/`enable` and `off`/`disable`/`close`/`kill` are accepted. The enable bit is
-saved as a custom session entry and restored from the **active branch** on
+The enable bit is saved as a custom session entry and restored from the **active branch** on
 reload/resume. A new session starts off. Enabling does not launch Chromium;
 the first page-touching tool does. Unrelated tools stay enabled/disabled as they
 were; the extension changes only its own interactive tools.

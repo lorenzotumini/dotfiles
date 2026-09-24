@@ -12,19 +12,38 @@ After applying chezmoi, restart Pi or run `/reload`, then:
 
 ```text
 /local                         Pick, load, and select a profile
-/local qwen3.8-27b-gsq          Select a profile directly
 /local:status                  Show router model states
 /local:reload                  Apply edited presets to the managed router
 /local:cancel                  Cancel a pending load
+/local:unload                  Unload all idle models, freeing VRAM and model-file mappings
 ```
 
-The space forms `/local status`, `/local reload`, and `/local cancel` remain
-available as compatibility aliases.
+Use the picker to select profiles; discrete actions use colon commands.
 
-Selecting a profile starts the router automatically if nothing is listening.
-The router stays available after Pi exits. One model is resident at a time;
-selecting another lets the router replace the idle model. Busy models are
-checked before switching. Pi's existing `/llama` command remains available.
+Selecting a profile starts the static `pi-local-llama.service` user unit
+automatically if nothing is listening. The router stays available across Pi
+restarts and project changes, then systemd stops it when the user manager shuts
+down, releasing model mappings before system shutdown unmounts filesystems.
+The user must not enable lingering for this shutdown lifecycle. One model is
+resident at a time; selecting another lets the router replace the idle model.
+Busy models are checked before switching. Pi's existing `/llama` command
+remains available.
+
+`/local:unload` unloads every idle model but keeps the router available.
+Select a profile again to reload it. `~/.pi/agent/local-llama/start.sh stop`
+stops the whole managed service and releases all model resources.
+
+The service unit is tracked at `agent/local-llama/pi-local-llama.service`.
+Install or refresh it after changing the unit:
+
+```bash
+install -Dm644 ~/.pi/agent/local-llama/pi-local-llama.service ~/.config/systemd/user/pi-local-llama.service
+systemctl --user daemon-reload
+```
+
+Existing installations already containing `~/.config/systemd/user/pi-local-llama.service`
+can apply this update directly. The service remains static (started on demand),
+so it does not start the large model router at login.
 `/local` sets the profile's default thinking level; Shift+Tab can then change it.
 The status line shows context and thinking mode, and Pi shows the model ID.
 

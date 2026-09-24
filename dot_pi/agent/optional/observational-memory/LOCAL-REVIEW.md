@@ -5,7 +5,7 @@ Pinned revision: `78a1efcfdd46332253fb289724f05b26dfc7769e`.
 
 ## Status
 
-**Installed in normal Pi, off until `/om on`. No live model workers have run during setup.**
+**Installed in normal Pi, off until `/om` is toggled on. No live model workers have run during setup.**
 After offline testing, the user requested installation and chose the parent
 session's model for both workers. The installed entry is
 `agent/extensions/observational-memory/index.ts`; see its README for usage.
@@ -59,7 +59,7 @@ budgets, one observer at a time, and debug logging off. It fails closed without 
 selected model of at least 16k context. Upstream OpenRouter defaults are not used
 by this entry. Global model settings are untouched. `pi-lean` remains unchanged.
 
-Use a fresh normal Pi session and `/om on` to try it; `/om:status` shows the models
+Use a fresh normal Pi session and `/om` to enable it; `/om:status` shows the models
 and clocks. A real worker/provider trial and meaningful recall evaluation remain
 unverified. Start with nonsensitive synthetic facts, not an existing long audit.
 

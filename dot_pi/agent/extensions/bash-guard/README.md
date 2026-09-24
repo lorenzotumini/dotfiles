@@ -7,12 +7,10 @@ OFF: no routine approval prompts, but the hard-block floor remains active.**
 
 | Command | Behavior |
 |---|---|
-| `/bash-guard on` | Enable approval prompts for flagged commands |
-| `/bash-guard off` | Disable prompts; keep the hard-block floor |
-| `/bash-guard status` | Report the current mode without changing it |
-| `/bash-guard` | Toggle on/off (backward-compatible shorthand) |
+| `/bash-guard:status` | Report the current mode without changing it |
+| `/bash-guard` | Toggle approval prompts on/off; hard-block floor remains active |
 
-`on` and `off` are idempotent. Invalid arguments show usage without changing mode.
+Invalid arguments show usage without changing mode.
 The footer shows `BG off · floor on` or `BG on`.
 
 Mode changes are session-local, not persisted. Reload, restart, new session and
@@ -32,7 +30,7 @@ patterns are still blocked, including:
 - `git reset --hard`, forced `git clean`, reflog expiration and pruning
 - Force pushes (`--force`, `--force-with-lease`, `-f`, `+refspec`)
 
-To intentionally run a blocked command, use `/bash-guard on`, then review and
+To intentionally run a blocked command, use `/bash-guard` to enable prompts, then review and
 approve that specific command. Turning prompts off is **not** a bypass for the
 hard-block floor. Ordinary non-recursive `rm` is not in this floor.
 

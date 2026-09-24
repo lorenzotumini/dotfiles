@@ -6,9 +6,8 @@ until you explicitly enable it for a session. `pi-lean` does not load it.
 Start a fresh normal Pi session, then:
 
 ```text
-/om on
+/om
 /om:status
-/om off
 ```
 
 Optional manual actions: `/om:compact` and `/om:consolidate`. Normally the clocks
@@ -40,7 +39,8 @@ recorded cost, and last error. The on/off gate survives resume on the active bra
   also recorded. Avoid sensitive material and exclude `.memory/` from version
   control before enabling in a repository. No project ignore files are changed
   automatically.
-- `/om off` stops workers but does not delete memory or undo past compactions.
+- `/om` toggles the gate; turning it off stops workers but does not delete memory
+  or undo past compactions.
 - Durable topic files/JOURNEY do **not** roll back under `/tree`.
 - LLM compression can still omit or distort facts. Missing coverage/receipts fail
   conservatively, but this is not a guarantee of perfect memory.

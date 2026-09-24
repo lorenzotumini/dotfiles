@@ -11,7 +11,7 @@ export function registerStatusCommand(pi: ExtensionAPI, runtime: Runtime): void 
 		handler: async (_args: string, ctx: any) => {
 			if (!ctx.hasUI) return;
 			if (!runtime.enabled) {
-				ctx.ui.notify("om is off (use /om on to enable)", "info");
+				ctx.ui.notify("om is off (toggle with /om to enable)", "info");
 				return;
 			}
 			runtime.ensureConfig(ctx.cwd);

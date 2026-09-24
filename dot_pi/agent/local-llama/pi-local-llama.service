@@ -1,0 +1,14 @@
+[Unit]
+Description=Pi local llama.cpp router
+DefaultDependencies=yes
+Before=shutdown.target
+
+[Service]
+Type=simple
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin
+Environment=LLAMA_CACHE=%h/.cache/pi-local-llama/llama-cache
+StandardOutput=append:%h/.cache/pi-local-llama/server.log
+StandardError=append:%h/.cache/pi-local-llama/server.log
+TimeoutStopSec=45
+KillMode=control-group
+ExecStart=%h/.pi/agent/local-llama/start.sh start

@@ -630,27 +630,18 @@ export default function browserExtension(pi: ExtensionAPI) {
     },
   });
 
-  pi.registerCommand("browser", {
-    description:
-      "Browser tools: bare '/browser' toggles, '/browser on' to enable, '/browser off' to disable + close, '/browser status' for status",
-    handler: async (args, ctx) => {
+  const handleBrowserCommand = async (args: string, ctx: any) => {
       const cmd = (args || "").trim().toLowerCase();
       if (cmd === "status") {
-        const toolState = enabled ? "enabled" : "disabled (run /browser on)";
+        const toolState = enabled ? "enabled" : "disabled";
         const procState =
           page && !page.isClosed() ? `, open at ${safeUrl(page.url())}` : "";
         ctx.ui.notify(`browser tools: ${toolState}${procState}`, "info");
         return;
       }
-      const action =
-        cmd === "" ? (enabled ? "off" : "on")
-        : ["on", "enable"].includes(cmd)
-          ? "on"
-          : ["off", "disable", "close", "kill"].includes(cmd)
-            ? "off"
-            : null;
+      const action = cmd === "" ? (enabled ? "off" : "on") : null;
       if (action === null) {
-        ctx.ui.notify("Usage: /browser [on|off|status]", "warning");
+        ctx.ui.notify("Use /browser to toggle, or /browser:status to inspect state.", "warning");
         return;
       }
       if (action === "on") {
@@ -668,13 +659,27 @@ export default function browserExtension(pi: ExtensionAPI) {
         wasRunning ? "browser tools disabled, browser closed" : "browser tools disabled",
         "info",
       );
-    },
+  };
+
+  pi.registerCommand("browser", {
+    description:
+      "Browser tools: bare '/browser' toggles; use /browser:status to inspect state",
+    handler: handleBrowserCommand,
   });
+  for (const action of ["status"]) {
+    pi.registerCommand(`browser:${action}`, {
+      description: `Browser tools ${action}`,
+      handler: async (args, ctx) => {
+        if (args.trim()) { ctx.ui.notify(`Usage: /browser:${action}`, "warning"); return; }
+        await handleBrowserCommand(action, ctx);
+      },
+    });
+  }
 
   // Default-off gate: tools stay registered (visible in pi.getAllTools(),
   // command discovery normal) but their promptSnippet / promptGuidelines
   // drop out of the system prompt and they're not callable until
-  // /browser on adds them back. The actual setActiveTools call happens in
+  // /browser enables them again. The actual setActiveTools call happens in
   // the session_start handler above, because pi forbids action methods
   // during the factory.
 }

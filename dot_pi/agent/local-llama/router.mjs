@@ -5,6 +5,36 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { apiKey, catalog, checkFiles, configPath, readConfig, renderIni, request, serverUrl } from './core.mjs';
 
+const ROUTER_UNIT = 'pi-local-llama.service';
+
+function runSystemctl(args, { signal, allowFailure = false, timeoutMs = 15000 } = {}) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason ?? new Error('Operation cancelled.'));
+    const child = spawn('systemctl', ['--user', ...args], { stdio: ['ignore', 'ignore', 'pipe'] });
+    let stderr = '';
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', (chunk) => { stderr = (stderr + chunk).slice(-2048); });
+    const abort = () => child.kill('SIGTERM');
+    const timer = setTimeout(() => child.kill('SIGTERM'), timeoutMs);
+    signal?.addEventListener('abort', abort, { once: true });
+    child.once('error', (error) => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
+      reject(new Error('Could not run systemctl --user: ' + error.message));
+    });
+    child.once('close', (code) => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
+      if (signal?.aborted) return reject(signal.reason ?? new Error('Operation cancelled.'));
+      if (code === 0 || allowFailure) return resolve(code === 0);
+      if (args[0] === 'start' && /unit .*not found|could not be found/i.test(stderr)) {
+        return reject(new Error('Missing pi-local-llama.service. Install ~/.pi/agent/local-llama/pi-local-llama.service to ~/.config/systemd/user/pi-local-llama.service, then run systemctl --user daemon-reload.'));
+      }
+      reject(new Error('systemctl --user ' + args.join(' ') + ' failed: ' + (stderr.trim() || 'exit ' + code)));
+    });
+  });
+}
+
 export function paths(c) {
   return { ini: join(c.server.cacheDirectory, 'models.ini'), log: join(c.server.cacheDirectory, 'server.log'), pid: join(c.server.cacheDirectory, 'server.json'), lock: join(c.server.cacheDirectory, 'start.lock') };
 }
@@ -49,7 +79,40 @@ export function serverArgs(c, ini = paths(c).ini) {
 }
 
 export async function ensureRouter(c, { foreground = false, signal } = {}) {
-  if (await reachable(c)) return { started: false };
+  if (await reachable(c)) {
+    if (foreground || !ownedProcess(c) || await runSystemctl(['is-active', '--quiet', ROUTER_UNIT], { signal, allowFailure: true })) {
+      return { started: false };
+    }
+    // One-time migration from the pre-service detached child to systemd.
+    const active = await catalog(c, signal);
+    if (active.some((model) => ['loading', 'downloading'].includes(model.status.value))) {
+      throw new Error('A model operation is active in the unmanaged router. Wait for it to finish, then select the profile again to move it under systemd.');
+    }
+    for (const model of active.filter((entry) => entry.status.value === 'loaded')) {
+      const slots = await request(c, `/slots?model=${encodeURIComponent(model.id)}`, { signal });
+      if (!Array.isArray(slots) || slots.some((slot) => slot.is_processing)) {
+        throw new Error(`The unmanaged router model ${model.id} is busy in another session. Wait for its request before migrating it to the shutdown-managed service.`);
+      }
+    }
+    await stopRouter(c);
+  }
+  if (!foreground) {
+    const bundledConfig = fileURLToPath(new URL('./models.json', import.meta.url));
+    if (configPath(c) !== bundledConfig) {
+      throw new Error('The managed service uses agent/local-llama/models.json. Custom PI_LOCAL_LLAMA_CONFIG paths need a matching systemd user unit.');
+    }
+    await runSystemctl(['start', ROUTER_UNIT], { signal, timeoutMs: 30000 });
+    const deadline = Date.now() + 30000;
+    while (Date.now() < deadline) {
+      signal?.throwIfAborted();
+      if (await reachable(c)) return { started: true, managed: true };
+      if (!await runSystemctl(['is-active', '--quiet', ROUTER_UNIT], { signal, allowFailure: true })) {
+        throw new Error('The managed llama router stopped during startup. Inspect ~/.cache/pi-local-llama/server.log and systemctl --user status ' + ROUTER_UNIT + '.');
+      }
+      await delay(200, undefined, { signal });
+    }
+    throw new Error('Managed router startup timed out. Inspect ~/.cache/pi-local-llama/server.log and systemctl --user status ' + ROUTER_UNIT + '.');
+  }
   mkdirSync(c.server.cacheDirectory, { recursive: true, mode: 0o700 });
   const p = paths(c);
   try { mkdirSync(p.lock); } catch (e) {
@@ -89,6 +152,12 @@ export async function ensureRouter(c, { foreground = false, signal } = {}) {
 }
 
 export async function stopRouter(c) {
+  if (await runSystemctl(['is-active', '--quiet', ROUTER_UNIT], { allowFailure: true })) {
+    await runSystemctl(['stop', ROUTER_UNIT], { timeoutMs: 60000 });
+    try { unlinkSync(paths(c).pid); } catch { /* Already removed. */ }
+    return;
+  }
+  // Clean up routers detached by versions before systemd managed the service.
   const info = ownedProcess(c);
   if (!info) throw new Error('No router owned by this launcher; refusing to stop an unrelated process.');
   process.kill(info.pid, 'SIGTERM');

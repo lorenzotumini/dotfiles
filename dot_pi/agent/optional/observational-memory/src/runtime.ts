@@ -18,7 +18,7 @@ export class Runtime {
 
 	/**
 	 * Absolute `.memory/<sessionId>/` root for this session's durable + transient memory. Set
-	 * whenever the gate is enabled (session_start / `/om on`) via `ensureSessionMemory`; empty
+	 * whenever the gate is enabled (session_start / `/om`) via `ensureSessionMemory`; empty
 	 * while disabled. All path helpers (listTopics/indexPath/readJourney/run*Path) take this root.
 	 */
 	memoryRoot = "";

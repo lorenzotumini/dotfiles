@@ -12,7 +12,7 @@ export function registerConsolidateCommand(pi: ExtensionAPI, runtime: Runtime): 
 		description: "Force an observational-memory consolidation now (ignores the pool threshold)",
 		handler: async (_args: string, ctx: any) => {
 			if (!runtime.enabled) {
-				if (ctx.hasUI) ctx.ui.notify("om is off (use /om on to enable)", "info");
+				if (ctx.hasUI) ctx.ui.notify("om is off (toggle with /om to enable)", "info");
 				return;
 			}
 			if (runtime.consolidatorInFlight) {

@@ -36,7 +36,7 @@ export default function integratedSubagents(pi: ExtensionAPI) {
       if (key === 'registerTool') return (tool: any) => pi.registerTool({
         ...tool,
         execute: (...args: any[]) => {
-          if (!enabled || !insideHerdr()) throw new Error('Subagents are off or Herdr is unavailable. Use /subagents status.');
+          if (!enabled || !insideHerdr()) throw new Error('Subagents are off or Herdr is unavailable. Use /subagents:status.');
           return tool.execute(...args);
         },
       });
@@ -44,7 +44,7 @@ export default function integratedSubagents(pi: ExtensionAPI) {
         ...command,
         handler: (args: string, ctx: ExtensionContext) => {
           if (!enabled || !insideHerdr()) {
-            if (ctx.hasUI) ctx.ui.notify('Subagents are off. Inside Herdr, enable with /subagents on.', 'warning');
+            if (ctx.hasUI) ctx.ui.notify('Subagents are off. Inside Herdr, toggle them on with /subagents.', 'warning');
             return;
           }
           return command.handler(args, ctx);
@@ -56,17 +56,15 @@ export default function integratedSubagents(pi: ExtensionAPI) {
   pi.on('session_start', (_event, ctx) => restore(ctx));
   pi.on('session_tree', (_event, ctx) => restore(ctx));
   pi.on('session_shutdown', () => { enabled = false; });
-  pi.registerCommand('subagents', {
-    description: 'Herdr read-only scout: bare /subagents toggles; /subagents on|off|status (normal Pi: on; lean: off)',
-    handler: async (args, ctx) => {
+  const handleSubagentsCommand = async (args: string, ctx: ExtensionContext) => {
       const raw = args.trim().toLowerCase();
       const notify = (text: string, kind: 'info' | 'warning' = 'info') => { if (ctx.hasUI) ctx.ui.notify(text, kind); };
       if (raw === 'status') {
         notify(`Subagents: ${enabled ? 'on' : 'off'} (${profile} profile). ${insideHerdr() ? 'Herdr context available.' : 'Requires a Herdr-managed pane; no plain-terminal fallback.'}`);
         return;
       }
-      if (raw !== '' && !['on', 'off'].includes(raw)) { notify('Usage: /subagents [on|off|status]', 'warning'); return; }
-      const want = raw === '' ? !enabled : raw === 'on';
+      if (raw !== '') { notify('Use /subagents to toggle, or /subagents:status to inspect state.', 'warning'); return; }
+      const want = !enabled;
       if (want === enabled) { notify(`Subagents already ${want ? 'on' : 'off'}.`, 'info'); return; }
       if (want && !available()) {
         notify('Cannot enable subagents: run inside Herdr and allow all three subagent tools in your CLI tool selection.', 'warning');
@@ -79,6 +77,18 @@ export default function integratedSubagents(pi: ExtensionAPI) {
       setEnabled(want);
       pi.appendEntry(ENTRY, { profile, on: enabled });
       notify(`Subagents ${enabled ? 'on' : 'off'}.`);
-    },
+    };
+  pi.registerCommand('subagents', {
+    description: 'Herdr read-only scout: bare /subagents toggles; use /subagents:status to inspect state (normal Pi: on; lean: off)',
+    handler: handleSubagentsCommand,
   });
+  for (const action of ['status']) {
+    pi.registerCommand(`subagents:${action}`, {
+      description: 'Report current subagent state',
+      handler: async (args, ctx) => {
+        if (args.trim()) { if (ctx.hasUI) ctx.ui.notify(`Usage: /subagents:${action}`, 'warning'); return; }
+        await handleSubagentsCommand(action, ctx);
+      },
+    });
+  }
 }

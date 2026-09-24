@@ -73,7 +73,7 @@ export default function localLlama(pi: ExtensionAPI) {
   });
 
   const localCommand: Parameters<ExtensionAPI['registerCommand']>[1] = {
-    description: 'Pick or load a local profile; see /local:status, /local:reload, /local:cancel',
+    description: 'Pick a local profile; use /local:status, /local:reload, /local:cancel, or /local:unload',
     handler: async (args, ctx) => {
       const arg = args.trim();
       if (arg === 'cancel') { operation?.abort(new Error('Cancelled by /local:cancel')); return; }
@@ -96,14 +96,43 @@ export default function localLlama(pi: ExtensionAPI) {
           ctx.ui.notify('Reloaded presets. Use /local to select a profile.');
           return;
         }
-        let p = config.profiles.find((p: any) => p.id === arg);
-        if (!arg) {
-          const choices = config.profiles.map((p: any) => `${p.name} [${p.id}]`);
-          const choice = await ctx.ui.select('Local model profile', choices);
-          if (!choice) return;
-          p = config.profiles[choices.indexOf(choice)];
+        if (arg === 'unload') {
+          const models = await catalog(config, signal);
+          const loaded = models.filter((model: any) => model.status.value === 'loaded');
+          if (!loaded.length) {
+            ctx.ui.notify('No models are loaded.');
+            return;
+          }
+          if (models.some((model: any) => ['loading', 'downloading'].includes(model.status.value))) {
+            throw new Error('A model is loading or downloading. Wait for it to finish before unloading.');
+          }
+          for (const model of loaded) {
+            const slots = await request(config, `/slots?model=${encodeURIComponent(model.id)}`, { signal });
+            if (!Array.isArray(slots) || slots.some((slot: any) => slot.is_processing)) {
+              throw new Error(`${model.id} is busy in this or another session. Wait for its request before unloading.`);
+            }
+          }
+          for (const model of loaded) {
+            const result = await request(config, '/models/unload', {
+              method: 'POST', body: JSON.stringify({ model: model.id }), signal,
+            });
+            if (result.success === false) throw new Error(result.error || `Could not unload ${model.id}.`);
+          }
+          const deadline = Date.now() + config.server.loadTimeoutMs;
+          while (loaded.length && Date.now() < deadline) {
+            const current = await catalog(config, signal);
+            if (loaded.every((model: any) => current.find((entry: any) => entry.id === model.id)?.status.value === 'unloaded')) {
+              ctx.ui.notify(`Unloaded ${loaded.map((model: any) => model.id).join(', ')}. Run /local to pick a profile again.`);
+              return;
+            }
+            await delay(250, undefined, { signal });
+          }
+          throw new Error('Timed out waiting for models to unload. Check /local:status and the llama server log.');
         }
-        if (!p) throw new Error(`Unknown profile. Use /local or one of: ${config.profiles.map((p: any) => p.id).join(', ')}`);
+        const choices = config.profiles.map((p: any) => `${p.name} [${p.id}]`);
+        const choice = await ctx.ui.select('Local model profile', choices);
+        if (!choice) return;
+        const p = config.profiles[choices.indexOf(choice)];
         checkFiles(config, [p]);
         ctx.ui.setStatus('local-llama', `loading ${p.id}…`);
         await ensureRouter(config, { signal });
@@ -139,14 +168,24 @@ export default function localLlama(pi: ExtensionAPI) {
       } finally { operation = undefined; status(ctx); }
     },
   };
-  pi.registerCommand('local', localCommand);
+  pi.registerCommand('local', {
+    ...localCommand,
+    handler: async (args, ctx) => {
+      if (args.trim()) {
+        ctx.ui.notify('Use /local to pick a profile. Discrete actions use /local:<action>.', 'warning');
+        return;
+      }
+      await localCommand.handler('', ctx);
+    },
+  });
   for (const [action, description] of Object.entries({
     reload: 'Apply changed local llama.cpp server presets',
     status: 'Show local router model states',
     cancel: 'Cancel a pending local model operation',
+    unload: 'Unload every idle model from VRAM and release mapped model files',
   })) {
     pi.registerCommand(`local:${action}`, {
-      description,
+        description,
       handler: async (args, ctx) => {
         if (args.trim()) { ctx.ui.notify(`Usage: /local:${action}`, 'warning'); return; }
         await localCommand.handler(action, ctx);

@@ -79,15 +79,13 @@ export default function observationalMemory(pi: ExtensionAPI, options: {
 		await runtime.whenWorkersIdle();
 	});
 
-	pi.registerCommand("om", {
-		description: "Toggle observational memory for this session (/om on, /om off)",
-		handler: async (args: string, ctx: any) => {
+	const handleOMCommand = async (args: string, ctx: any) => {
 			const arg = (args ?? "").trim().toLowerCase();
-			if (!["", "on", "off"].includes(arg)) {
-				if (ctx.hasUI) ctx.ui.notify("Usage: /om on|off (status: /om:status)", "warning");
+			if (arg !== "") {
+				if (ctx.hasUI) ctx.ui.notify("Use /om to toggle, or /om:status to inspect state.", "warning");
 				return;
 			}
-			const next = arg === "on" ? true : arg === "off" ? false : !runtime.enabled;
+			const next = !runtime.enabled;
 			if (next === runtime.enabled) {
 				if (ctx.hasUI) ctx.ui.notify(`om already ${next ? "on" : "off"}`, "info");
 				return;
@@ -107,9 +105,11 @@ export default function observationalMemory(pi: ExtensionAPI, options: {
 			}
 			pi.appendEntry(OM_ENABLED, { enabled: next });
 			if (ctx.hasUI) ctx.ui.notify(`om ${next ? "enabled" : "disabled"}`, "info");
-		},
+	};
+	pi.registerCommand("om", {
+		description: "Toggle observational memory for this session; use /om:status to inspect state",
+		handler: handleOMCommand,
 	});
-
 	// Refresh the installed parent-model profile before any background dispatch.
 	// Existing workers retain their launch model; subsequent workers use the new selection.
 	const refreshProfile = (_event: unknown, ctx: any) => {

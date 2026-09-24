@@ -23,8 +23,8 @@ rather than this config tree. Chezmoi ignores `.venv/`, Python caches and
 
 The optional Herdr subagent integration is Linux/Herdr-only and is omitted by
 chezmoi on Windows. Normal Pi enables it inside Herdr; `pi-lean` loads it but
-keeps it off until `/subagents on`. Observational memory is normal-Pi-only and
-remains off until `/om on`.
+keeps it off until `/subagents` is toggled on. Observational memory is normal-Pi-only and
+remains off until `/om` is toggled on.
 
 After applying or changing extensions, restart Pi or use `/reload` as appropriate.
 

@@ -13,9 +13,7 @@ Herdr and hidden outside it. `pi-lean` loads the same entry, but starts them off
 
 ```text
 /subagents        # toggle
-/subagents on
-/subagents status
-/subagents off
+/subagents:status
 ```
 
 Manual gate choices survive reload/resume on the active branch, separately for

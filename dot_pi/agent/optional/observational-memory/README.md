@@ -10,7 +10,7 @@ The extension ships in the global extensions folder during development, so it is
 per session** and is completely invisible until you turn it on.
 
 - `/om` — toggle for this session
-- `/om on` / `/om off` — set explicitly
+- `/om` — toggle the gate
 
 State persists per session in the ledger (`om.enabled`) and survives resume. When off, every
 trigger, hook, widget, and subprocess returns immediately.
@@ -89,7 +89,7 @@ folds each run into an `om.cost` ledger entry.
 
 | Command | Effect |
 |---|---|
-| `/om`, `/om on`, `/om off` | The per-session on/off gate |
+| `/om` | Toggle the per-session on/off gate |
 | `/om:status` | Workers in flight, active observation count, next-observer progress, pool/consolidator state, topic-file count, journey size, context usage, **session cost**, last error |
 | `/om:compact` | Force a compaction now (ignores the threshold) |
 | `/om:consolidate` | Force a consolidation now (ignores the pool threshold) |
