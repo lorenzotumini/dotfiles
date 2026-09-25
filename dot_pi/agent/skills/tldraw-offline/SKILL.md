@@ -11,7 +11,7 @@ Use this skill for tasks involving open tldraw Desktop files. The desktop app ex
 
 ## Server
 
-The default server is `http://localhost:7236`. If that port is not active, read the `port` from `/home/lorenzo/.config/tldraw/server.json`.
+The default server is `http://localhost:7236`. If that port is not active, read `port` from the app's `server.json`: `%APPDATA%/tldraw/server.json` on Windows, or `${XDG_CONFIG_HOME:-$HOME/.config}/tldraw/server.json` on Linux. The `tq` helper resolves the platform-specific path automatically.
 
 A clean quit removes `server.json`; the next launch rewrites it. It also records `pid` and `startedAt`, so if the file is present but requests to its `port` fail, treat it as stale (the app quit uncleanly) — the app is not running.
 
@@ -22,23 +22,24 @@ Every request except `GET /` and `/readme` needs the per-launch `token` from tha
 **Each Bash tool call runs in a fresh shell — exported env vars do NOT persist between calls.** A `TLDRAW_TOKEN` you `export` in one call is empty in the next, so the request sends `authorization: Bearer` with no token and 401s. "Export once and reuse" does not work here — re-establish the port and token on every call. Read them together at the top of each call (both stay fixed for the app's lifetime, so re-reading is cheap):
 
 ```bash
-PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' '/home/lorenzo/.config/tldraw/server.json'); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' '/home/lorenzo/.config/tldraw/server.json')
+SERVER_JSON="${XDG_CONFIG_HOME:-$HOME/.config}/tldraw/server.json"
+PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' "$SERVER_JSON"); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' "$SERVER_JSON")
 # use as:  http://localhost:$PORT/...   -H "authorization: Bearer $TOKEN"
 ```
 
 ### Helper: `tq`
 
-A ready-made helper ships with this skill at `"$HOME/skills/tldraw-offline/tq.mjs"`. Invoke it as `node "$HOME/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]` — it re-reads the port and token from `server.json` itself on every call, so you never handle the token or the fresh-shell env problem. A body starting with `{` is sent as JSON; anything else as raw `text/plain`:
+A ready-made helper ships with this skill at `"$HOME/.pi/agent/skills/tldraw-offline/tq.mjs"`. Invoke it as `node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]` — it re-reads the port and token from `server.json` itself on every call, so you never handle the token or the fresh-shell env problem. A body starting with `{` is sent as JSON; anything else as raw `text/plain`:
 
 ```bash
-node "$HOME/skills/tldraw-offline/tq.mjs" POST /api/search '{"code":"return await api.getDocs()"}'
-node "$HOME/skills/tldraw-offline/tq.mjs" POST /api/doc/DOC_ID/exec 'return editor.getCurrentPageShapes().length'
-node "$HOME/skills/tldraw-offline/tq.mjs" GET  /api/doc/DOC_ID/script-status
+node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" POST /api/search '{"code":"return await api.getDocs()"}'
+node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" POST /api/doc/DOC_ID/exec 'return editor.getCurrentPageShapes().length'
+node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" GET  /api/doc/DOC_ID/script-status
 ```
 
 Prefer it on Windows and in any non-POSIX shell: it uses no shell substitution or pipelines, so the same line runs unchanged in bash, zsh, Git Bash, and PowerShell, whereas the `PORT=$(...)` blocks below assume a POSIX shell.
 
-If `tq` is missing (an older install), fall back to raw `curl` with the `PORT`/`TOKEN` reads shown above. The raw-`curl` examples below stay in explicit form so each request is visible; translate any to `node "$HOME/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]`.
+If `tq` is missing (an older install), fall back to raw `curl` with the `PORT`/`TOKEN` reads shown above. The raw-`curl` examples below stay in explicit form so each request is visible; translate any to `node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]`.
 
 ```bash
 curl -s http://localhost:7236/readme
@@ -58,11 +59,12 @@ The code-taking POST endpoints accept raw JavaScript as the request body (`conte
 
 ## Use this first
 
-Most tasks do not require searching `api.members`. Start with these calls and search the full Editor API only if a snippet fails or you truly need an unknown method. The object is `api`, not `spec`. Each block below is shown as raw `curl` so the request is visible; `node "$HOME/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]` is the shorter equivalent that handles the port and token for you.
+Most tasks do not require searching `api.members`. Start with these calls and search the full Editor API only if a snippet fails or you truly need an unknown method. The object is `api`, not `spec`. Each block below is shown as raw `curl` so the request is visible; `node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]` is the shorter equivalent that handles the port and token for you.
 
 ```bash
 # Fresh shell per call: re-read port + token first (or use the values already in your context).
-PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' '/home/lorenzo/.config/tldraw/server.json'); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' '/home/lorenzo/.config/tldraw/server.json')
+SERVER_JSON="${XDG_CONFIG_HOME:-$HOME/.config}/tldraw/server.json"
+PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' "$SERVER_JSON"); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' "$SERVER_JSON")
 
 # Pick the target doc by focused window or filename.
 curl -s -X POST http://localhost:$PORT/api/search \
@@ -83,7 +85,7 @@ curl -s -X POST http://localhost:$PORT/api/search \
   -d '{"code":"const doc = await api.getFocusedDoc(); return doc ? await api.getBindings(doc.id) : []"}'
 ```
 
-Every listed doc has `ownership: 'local' | 'remote' | 'server'`. A remote or server doc's `id` (opaque connection id for remote; the server's board id for server) works with `/exec`, `api.getShapes()`, `api.getBindings()`, and screenshots, but its `documentId`, `filePath`, and `unsavedChanges` are `null`: only the host (or server) owns those facts, and `host` carries the `host:port` it came from. Remote edits sync into the host working copy; server edits sync into the server's durable storage on their own. Do not call `helpers.saveDoc()`, open `/script-workspace`, or claim an archive was saved for a remote or server doc.
+Every listed doc has `ownership: 'local' | 'remote' | 'server'`. A remote or server doc's `id` (opaque connection id for remote; the server's board id for server) works with `/exec`, `api.getShapes()`, `api.getBindings()`, and screenshots, but its `documentId`, `filePath`, and `unsavedChanges` are `null`: only the host (or server) owns those facts, and `host` carries the `host:port` it came from. Remote edits sync into the host working copy; server edits sync into the server's durable storage on their own. Do not call `helpers.saveDoc()`, open `/script-workspace`, or claim an archive was saved for a remote or server doc. A server doc also carries `serverUrl`: its script is edited on the server through that API — read the `script-a-board-on-an-offline-server` recipe.
 
 A local doc also reports `shared`. True means the board is shared right now and other people are editing it as you work: read before you write, and never clear a page you did not create.
 
@@ -118,6 +120,7 @@ curl -s -X POST http://localhost:$PORT/api/docs/create \
 - `connect-shapes-with-bound-arrows` — Connect shapes with bound arrows
 - `draw-a-diagram-from-mermaid` — Draw a diagram from mermaid
 - `add-durable-behavior-with-a-board-script` — Add durable behavior with a board script
+- `script-a-board-on-an-offline-server` — Script a board on an offline server
 - `editable-furniture-with-anchored-internals` — Editable furniture with anchored internals
 - `scripts-on-a-shared-board` — Scripts on a shared board
 - `comment-threads-read-reply-resolve` — Comment threads: read, reply, resolve
@@ -132,7 +135,7 @@ Fetch `/readme` when an endpoint fails or you need API details not covered here.
 
 ## Durable UI Behavior
 
-For durable UI behavior on a locally owned document, open `/script-workspace`, write `script/main.js`, check `script-status`, then verify behavior once. `script-status` returns a derived `state` field — treat `state: "applied"` as success; `"pending"` means the watcher hasn't applied the current file yet — poll again and it resolves (a file saved while the app was restarting is applied automatically the next time you open `/script-workspace` or read `script-status`, no manual re-save needed); `"error"` means the apply failed (read `lastApplyError` / `errorLogPath`). Branch on `state` rather than comparing the raw digests yourself. The `/script-workspace` response reports `isDefaultScript` (true while `script/main.js` is still the untouched starter template, pre-created when absent) — when `isDefaultScript` is false there is a preexisting script to extend, not clobber. Read `mainJsPath` to see the current contents before editing (and read it once first if your file tools refuse to write a file they have not read). Remote boards have no local script workspace or watcher status; their host owns the script files. Do not spend the run searching for pointer/click APIs — read the `clickable-card-or-button-ui` recipe from `api.recipes` first.
+For durable UI behavior on a locally owned document, open `/script-workspace`, write `script/main.js`, check `script-status`, then verify behavior once. `script-status` returns a derived `state` field — treat `state: "applied"` as success; `"pending"` means the watcher hasn't applied the current file yet — poll again and it resolves (a file saved while the app was restarting is applied automatically the next time you open `/script-workspace` or read `script-status`, no manual re-save needed); `"error"` means the apply failed (read `lastApplyError` / `errorLogPath`). Branch on `state` rather than comparing the raw digests yourself. The `/script-workspace` response reports `isDefaultScript` (true while `script/main.js` is still the untouched starter template, pre-created when absent) — when `isDefaultScript` is false there is a preexisting script to extend, not clobber. Read `mainJsPath` to see the current contents before editing (and read it once first if your file tools refuse to write a file they have not read). Remote boards have no local script workspace or watcher status; their host owns the script files. An offline-server board has none either — its script is written on the server itself (the `script-a-board-on-an-offline-server` recipe), and the windows on it hot-reload. Do not spend the run searching for pointer/click APIs — read the `clickable-card-or-button-ui` recipe from `api.recipes` first. Never `window.addEventListener` for keys or clicks: clicks go through that recipe, keyboard shortcuts through a tool registered in `config.js`. A shape that does something when clicked is a control, not content: create it with `isLocked: true`, or lock a user-drawn one with `editor.updateShapes`, so a click runs the action instead of selecting the shape, and a second click does not open its label. Only controls get locked — the shapes they act on and furniture the user should move stay unlocked. `editor.updateShapes` silently skips a locked shape, so a script's own writes to a control (a pressed look) go through `editor.run(fn, { ignoreShapeLock: true })`. Tell the user the controls are locked and that Edit → Unlock All frees them.
 
 ## Shape format
 
@@ -152,9 +155,13 @@ await helpers.saveDoc()
 
 The `helpers.saveDoc()` call above is only for `ownership: 'local'`. Omit it for a remote doc (its edits sync to the host working copy and only the host saves the archive) and for a server doc (its edits persist to the server on their own).
 
-Saving a local doc is your job, not the user's. Whenever a local doc reports `unsavedChanges: true` — including after script-workspace edits, which mark the doc unsaved — save it yourself with a one-line exec snippet: `{"code": "await helpers.saveDoc()"}`. Never ask the user to save or press Cmd+S.
+Saving a local doc is your job, not the user's — except a doc that has never been saved. Whenever a local doc reports `unsavedChanges: true` and has a `filePath` — including after script-workspace edits, which mark the doc unsaved — save it yourself with a one-line exec snippet: `{"code": "await helpers.saveDoc()"}`. Never ask the user to save or press Cmd+S. A doc with `filePath: null` has never been saved; skip it and mention the doc is unsaved.
 
 Use `api.getShapes(doc.id)` to inspect existing raw shape records before mutating them; read a label's visible text with `helpers.richTextToPlainText(shape.props.richText)`, not by parsing the rich-text JSON. Draw a labeled container around existing shapes with `helpers.boxShapes`, not a hand-placed rectangle — the `group-shapes-with-a-box` recipe is the worked example.
+
+Arrange existing shapes with `editor.alignShapes(ids, 'top')`, `editor.stackShapes(ids, 'horizontal', gap)` and `editor.distributeShapes(ids, 'horizontal')`, not hand-computed x/y loops. For edges, anchoring and hit-testing use the shape's geometry, not its bounding box: `editor.getShapeGeometry(shape).nearestPoint(editor.getPointInShapeSpace(shape, pagePoint), Geometry2dFilters.EXCLUDE_LABELS)` gives the outline point (`Geometry2dFilters` is imported from `'tldraw'`; without the filter a labelled shape can answer with its label's edge) (map it back with `editor.getShapePageTransform(shape).applyToPoint(p)`), where `getShapePageBounds` puts it on the corner of an ellipse or rotated shape.
+
+A card and the words on it are one shape: the words go in the geo's `richText` label, as above; a long label wants a bigger card (`verticalAlign: 'start'`), not a separate `text` shape. `text` shapes are for words that stand on their own, like a heading over a group of cards.
 
 ### Freehand draw shapes
 
@@ -193,19 +200,20 @@ For a closed loop, end the points where they started. Multiple strokes are multi
 - Create every meaningful connection with `helpers.createArrowBetweenShapes(fromId, toId, options)` so both endpoints have real bindings.
 - Never create a raw arrow shape for a meaningful connection. Raw unbound arrows are only appropriate for explicitly decorative marks.
 - Run `helpers.getLints()` before reporting a diagram complete and address every actionable result. The `connect-shapes-with-bound-arrows` recipe in `api.recipes` is the worked example; fetch `/readme` for the `meta.lintIgnore` opt-out for intentional decorative arrows.
-- For a whole diagram from structure — a flowchart, sequence diagram, state machine, or mindmap — generate it with `helpers.mermaid(source)` rather than placing nodes and arrows by hand; it creates real bound shapes. The `draw-a-diagram-from-mermaid` recipe is the worked example.
+- An `/exec` response may carry `lints: { new, resolved }`: the lints that snippet introduced and cleared. Fix every `new` lint before reporting done.
+- For a whole diagram from structure — a flowchart, sequence diagram, state machine, or mindmap — generate it with `helpers.mermaid(source)` rather than placing nodes and arrows by hand; it creates real bound shapes. The `draw-a-diagram-from-mermaid` recipe is the worked example. Two or more diagrams to compare are still mermaid: one source with a `subgraph` per diagram (a `flowchart LR` puts them beside each other), or one call per diagram with `options.blueprintRender.position` set so they do not overlap. "Side by side", headings, and colours are not reasons to place nodes by hand.
 
 ## Comments
 
-Comment threads are how people and agents talk about the canvas in context — each thread is anchored to a shape, a point, a region, or the page, so the anchor tells you what the words are about. `api.getComments(doc.id)` (via `/api/search`) returns every live thread with its anchor, plaintext comments, and resolved state; `supported: false` means this board has no comment lane — report that rather than working around it. When a task starts from a comment ("do what the comments say"), read the threads first and use each anchor to find the shapes under discussion. Reply in the thread you acted on and resolve it once its ask is done; post a new thread anchored to what you changed when a note in context serves better than a chat summary. All comment writes go through `/exec` with the `@tldraw/commenting` verbs (`putCommentRecords`, `resolveThread`, …) — never a raw `store.put`, which puts comment records on the user's undo stack. A supported board that holds no threads yet has comments turned off: agent writes are reverted until the board owner enables commenting in the app, so ask the user first. Read the `comment-threads-read-reply-resolve` recipe from `api.recipes` before writing one.
+Comment threads are how people and agents talk about the canvas in context — each thread is anchored to a shape, a point, a region, or the page, so the anchor tells you what the words are about. `api.getComments(doc.id)` (via `/api/search`) returns every live thread with its anchor, plaintext comments, and resolved state; `supported: false` means this board has no comment lane — report that rather than working around it. When a task starts from a comment ("do what the comments say"), read the threads first and use each anchor to find the shapes under discussion. Reply in the thread you acted on and resolve it once its ask is done. A thread that asks you not to act, or that is addressed to someone else ("leave this one for Kevin"), is not yours: do not reply in it, do not resolve it, and do not touch its anchor — mention it in your summary instead; post a new thread anchored to what you changed when a note in context serves better than a chat summary. All comment writes go through `/exec` with the `@tldraw/commenting` verbs (`putCommentRecords`, `resolveThread`, …) — never a raw `store.put`, which puts comment records on the user's undo stack. A supported board that holds no threads yet has comments turned off: agent writes are reverted until the board owner enables commenting in the app, so ask the user first — except on an offline-server board (`ownership: 'server'`), which has no owner and no gate: a supported server board with no threads is simply empty, so write. Read the `comment-threads-read-reply-resolve` recipe from `api.recipes` before writing one.
 
 ## Workflow
 
-1. Restate the intended outcome in concrete canvas terms.
+1. Restate the intended outcome in concrete canvas terms. If the request does not say which shapes it means and nothing on the board says either ("make the important one stand out" over six identical cards), ask which and stop there: the turn ends with the question. An unanswered question is not permission to pick a default — write nothing until the answer comes.
 2. Choose durability:
    - Static drawing edits such as moving, arranging, labeling, or styling shapes use `/exec`.
-   - Durable behavior on a locally owned document such as clickable UI, animations, reactive layouts, or "run on open" logic uses `/script-workspace` and direct filesystem edits under `script/**`. Read the worked recipes from `api.recipes` (via `/api/search`) before building durable behavior. Remote boards have no local script workspace.
-3. Verify once with records from `api.getShapes()`, `api.getBindings()`, `api.getScriptStatus()`, or a screenshot when visual placement is uncertain. Save only a locally owned document with `helpers.saveDoc()`; remote edits sync to the host working copy.
+   - Durable behavior on a locally owned document such as clickable UI, animations, reactive layouts, or "run on open" logic uses `/script-workspace` and direct filesystem edits under `script/**`. Read the worked recipes from `api.recipes` (via `/api/search`) before building durable behavior. Remote boards have no local script workspace; an offline-server board's script is written on the server (the `script-a-board-on-an-offline-server` recipe).
+3. Verify once with records from `api.getShapes()`, `api.getBindings()`, `api.getScriptStatus()`, or a screenshot when visual placement is uncertain. After a resize or move, compare `helpers.getLints()` from before and after your edit: fix only lints your edit introduced, on the shape you edited, never by moving a neighbour you were not asked to touch. Save only a locally owned document with `helpers.saveDoc()`; remote edits sync to the host working copy.
 4. Stop after one successful verification unless the user explicitly asks for debugging.
 
 Never edit `.tldraw` archive files directly while they are open, and never edit `db.sqlite`, `db.sqlite-wal`, `db.sqlite-shm`, `metadata.json`, `.lock`, or `.script-workspace/**`.
@@ -224,7 +232,7 @@ Before any bulk or destructive edit (deleting all shapes on a page, clearing a d
 
 Use this when a board script draws a board that users should rearrange or restyle while script-owned animation/game pieces still follow it.
 
-- Create user-facing furniture with stable ids and `helpers.createShapeIfMissing` / `helpers.createShapesIfMissing`; never delete and redraw it on rerun.
+- Create user-facing furniture with stable ids and `helpers.createShapeIfMissing` / `helpers.createShapesIfMissing`; never delete and redraw it on rerun. A shape that runs an action on click is a control, not furniture: create it with `isLocked: true`.
 - Pick one visible anchor per interactive system, such as a track or table felt.
 - Use `helpers.onShapeTranslate(anchorId, ({ dx, dy }) => ... , { signal })` to respond only to that anchor.
 - Move script-owned internals with `helpers.translateShapes(..., dx, dy)` — the handler's dx/dy and the delta it consumes are both page-space, so pass them straight through even when shapes sit in frames or groups. It runs without recording undo history; wrap other script-owned writes in `editor.run(fn, { history: 'ignore' })`.
@@ -239,11 +247,12 @@ Read the worked `custom-shape-config-js`, `custom-binding-config-js`, and `custo
 
 ## Fast path for static edits
 
-Shown as raw `curl`; `node "$HOME/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]` is the shorter equivalent that handles the port and token for you.
+Shown as raw `curl`; `node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]` is the shorter equivalent that handles the port and token for you.
 
 ```bash
 # Fresh shell per call: re-read port + token (or use the values already in your context).
-PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' '/home/lorenzo/.config/tldraw/server.json'); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' '/home/lorenzo/.config/tldraw/server.json')
+SERVER_JSON="${XDG_CONFIG_HOME:-$HOME/.config}/tldraw/server.json"
+PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' "$SERVER_JSON"); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' "$SERVER_JSON")
 
 # Discover docs.
 curl -s -X POST http://localhost:$PORT/api/search \
