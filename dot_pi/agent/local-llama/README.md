@@ -66,26 +66,32 @@ Available profiles (K = 1024 tokens; context includes input, thinking and output
 | CODE FAST / `qwen3.6-35b-a3b` | 96K | Both, Q8 KV | medium / off |
 | CODE DEEP / `qwen3.8-27b-q4` | 128K | Both, Q5 KV | medium / on |
 | CHAT / `gemma-4-31b` | 40K | Both, Q5 KV, projector and MTP drafter on 5060 Ti | off / on |
-| LONG / `qwen3.8-27b-gsq` | 256K | Both, Q4 KV | medium / off |
+| LONG / `qwen3.8-27b-gsq` | 240K | Both, Q4 KV; F16 MTP draft cache | medium / on |
 | AGENT SOLO / `qwen3.8-27b-gsq-solo` | 128K | 5060 Ti, Q5 KV | medium / off |
-| SECURITY / `qwen3.8-27b-orca` | 128K | Both, Q8 KV | medium / off |
+| SECURITY / `qwen3.8-27b-orca` | 112K | Both, Q5 KV; F16 MTP draft cache | medium / on |
 
 Start with CODE FAST for routine agent work, CODE DEEP for harder coding,
 and CHAT for general conversation. These role assignments are recommendations,
 not measured quality rankings. SECURITY uses the downloaded lower-refusal Orca
 fine-tune; lower refusal does not establish security expertise or accuracy.
-LONG maximizes allocated context with IQ3 weights and Q4 KV, trading precision
-for space. The Q4-weight, Q8-KV coding profile is the more conservative daily
+LONG prioritizes a large context with IQ3 weights, Q4 KV and embedded MTP,
+trading precision for space. Its 240K window leaves more working memory than
+the tested 256K MTP configuration. SECURITY uses 112K Q5 KV so its embedded
+MTP head fits with about 1.2 GiB free on the tighter card. At 112K, Q8 KV
+with MTP left only about 0.3 GiB free. Q5 KV trades some cache precision for
+the acceleration while retaining the model's Q4_K_M weights. The Q4-weight, Q8-KV coding profile is the more conservative daily
 choice. FAST includes vision so it can share the system with AGENT SOLO on the 5060 Ti. CHAT supports images and uses the paired Gemma MTP assistant. Q5 KV makes the larger CODE DEEP, CHAT, and AGENT SOLO windows fit with about 1 GiB or more free on their tightest card in a short, isolated probe; Q8 KV retains slightly more cache precision.
 
 Calibrated on RTX 3070 Ti 8 GB + RTX 5060 Ti 16 GB with llama.cpp build 10964.
 The display cable was connected to the 3070 Ti (CUDA0); its idle desktop allocation was about 630 MiB, versus 2 MiB on the 5060 Ti (CUDA1). Keep the display on CUDA0 for these profiles: AGENT SOLO and Gemma MTP use most of CUDA1, and moving the display there would likely leave too little margin. If the cable moves, check `nvidia-smi` and recalibrate the splits before relying on the largest contexts. See [the current audit](../../audits/2026-09-26-local-llama.md) for measurements and test limits; [the earlier audit](../../audits/2026-09-24-local-llama.md) records the prior profiles.
 A large allocated window is not a guarantee of reliable retrieval across that
 entire window. Prefill time grows with history; use compaction and targeted file
-reads in long-running agents. Keep `parallel = 1` per model so its context is
+reads in long-running agents. [The MTP follow-up](../../audits/2026-09-26-local-llama-mtp-followup.md) records the LONG and SECURITY trials. Keep `parallel = 1` per model so its context is
 not divided among slots. Two Pi sessions can use the disjoint GPU profiles.
 
-Qwen3.8 Q4 contains an embedded MTP head; no separate download is needed.
+The installed Qwen3.8 Q4, IQ3, and Orca files contain embedded MTP heads; no separate
+download is needed. LONG uses an F16 draft KV cache because it took less GPU
+memory than quantized draft caches with this build and model.
 Your Qwen3.6 Q4_K_S file has no MTP head. The Unsloth MTP variant is a replacement
 full GGUF with the head included; this configuration intentionally uses the
 existing non-MTP file. Gemma uses the separate assistant via `spec-draft-model`
