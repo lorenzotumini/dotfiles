@@ -21,7 +21,7 @@ format = "[$path]($style) "
 [git_branch]
 symbol = ""
 style = "bold #DDB15F"
-format = "[($branch)]($style) "
+format = "[($branch)]($style)"
 
 [git_status]
 style = "bold #DDB15F"
