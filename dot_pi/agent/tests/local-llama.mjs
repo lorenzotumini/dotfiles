@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readConfig, validateConfig, renderIni, profileOptions, profileTag, assertProfile, decorateModel, requestPayload, verifyLoaded } from '../local-llama/core.mjs';
-import { serverArgs } from '../local-llama/router.mjs';
+import { readConfig, validateConfig, renderIni, profileOptions, profileTag, assertProfile, decorateModel, requestPayload, verifyLoaded, canCoexist } from '../local-llama/core.mjs';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { serverArgs, acquireModelOperation } from '../local-llama/router.mjs';
 import localLlama from '../extensions/local-llama.ts';
 
 const config = readConfig();
@@ -42,7 +45,7 @@ test('runtime fingerprint changes with configuration but not sampling preference
   assert.equal(profileTag(config, profile), profileTag(c, profile));
   const changed = { ...profile, context: 32768 };
   assert.notEqual(profileTag(config, profile), profileTag(config, changed));
-  assert.throws(() => assertProfile(config, profile, { status: { args: [] }, tags: ['wrong'] }), /differ.*Run \/local:reload, then \/local qwen3\.8-27b-gsq/);
+  assert.throws(() => assertProfile(config, profile, { status: { args: [] }, tags: ['wrong'] }), /differ.*Run \/local:reload, then select qwen3\.8-27b-gsq in \/local/);
   assertProfile(config, profile, { status: { args: expectedArgs }, tags: [profileTag(config, profile)] });
   const overridden = [...expectedArgs]; overridden[overridden.indexOf('--device') + 1] = 'CPU';
   assert.throws(() => assertProfile(config, profile, { status: { args: overridden }, tags: [profileTag(config, profile)] }), /option device differs/);
@@ -81,7 +84,7 @@ test('toggle-only and non-thinking policies do not receive native effort setting
 test('native model decoration retains provider identity and disables unsupported levels', () => {
   const native = { id: profile.id, provider: 'llama.cpp', api: 'openai-completions', baseUrl: 'http://localhost/v1', contextWindow: 262144 };
   const decorated = decorateModel(config, native);
-  assert.equal(decorated.contextWindow, 65536);
+  assert.equal(decorated.contextWindow, profile.context);
   assert.equal(decorated.thinkingLevelMap.high, null);
   assert.equal(decorated.thinkingLevelMap.xhigh, 'xhigh');
   assert.equal(decorated.provider, native.provider);
@@ -111,6 +114,64 @@ test('extension keeps native provider behavior and aborts stale requests despite
   await assert.rejects(() => handlers.get('before_provider_request')({ payload: { messages: [] } }, ctx), /stale/);
   assert.equal(aborted, true);
   assert.equal(notifications.at(-1).level, 'error');
-  assert.match(notifications.at(-1).message, /Run \/local:reload, then \/local qwen3\.8-27b-gsq/);
+  assert.match(notifications.at(-1).message, /Run \/local:reload, then select qwen3\.8-27b-gsq in \/local/);
   assert.match(notifications.at(-1).message, /You can continue this conversation/);
+});
+
+
+test('two residents require disjoint verified CUDA placement, including the projector', () => {
+  const c = structuredClone(config); c.server.maxModels = 2;
+  const a = { ...c.profiles[0], id: 'left', vision: false, runtime: { ...c.profiles[0].runtime, device: 'CUDA0' } };
+  const b = { ...a, id: 'right', runtime: { ...a.runtime, device: 'CUDA1' } };
+  assert.equal(canCoexist(c, a, b), true);
+  assert.equal(canCoexist(c, a, { ...b, vision: true, runtime: { ...b.runtime, 'mmproj-device': 'CUDA0' } }), false);
+  const drafted = { ...b, model: 'gemma4-31b', runtime: { ...b.runtime, 'spec-type': 'draft-mtp', 'spec-draft-device': 'CUDA0' } };
+  assert.equal(canCoexist(c, a, drafted), false);
+  delete drafted.runtime['spec-draft-device'];
+  assert.equal(canCoexist(c, a, drafted), false);
+  assert.equal(canCoexist(c, a, { ...b, runtime: { ...b.runtime, device: 'CUDA0,CUDA1' } }), false);
+  assert.equal(canCoexist(c, a, { ...b, runtime: { ...b.runtime, device: 'CPU' } }), false);
+  assert.equal(canCoexist(c, a, undefined), false);
+  assert.equal(canCoexist(c, a, a), false);
+  c.server.maxModels = 1;
+  assert.equal(canCoexist(c, a, b), false);
+  c.server.maxModels = 3;
+  assert.throws(() => validateConfig(c), /maxModels/);
+  delete c.server.maxModels;
+  assert.equal(validateConfig(c).server.maxModels, 1);
+  assert.equal(serverArgs({ ...c, server: { ...c.server, maxModels: 2 } })[3], '2');
+});
+
+test('external draft model is generated only for an enabled MTP profile', () => {
+  const p = config.profiles.find(p => p.model === 'gemma4-31b');
+  const on = { ...p, runtime: { ...p.runtime, 'spec-type': 'draft-mtp' } };
+  assert.equal(profileOptions(config, on)['spec-draft-model'], config.models[p.model].draftPath);
+  const off = { ...p, runtime: { ...p.runtime, 'spec-type': 'none' } };
+  assert.equal(profileOptions(config, off)['spec-draft-model'], undefined);
+  assert.notEqual(profileTag(config, on), profileTag(config, off));
+  const c = structuredClone(config);
+  c.runtimeDefaults['spec-draft-model'] = '/tmp/wrong.gguf';
+  assert.throws(() => validateConfig(c), /unsupported runtime option/);
+});
+
+test('residency changes are serialized across callers and release is idempotent', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'pi-local-lock-test-'));
+  const c = { ...config, server: { ...config.server, cacheDirectory: directory } };
+  try {
+    const release = acquireModelOperation(c);
+    assert.throws(() => acquireModelOperation(c), /Another session/);
+    release(); release();
+    acquireModelOperation(c)();
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('router aliases preserve value verification and reject conflicting duplicates', () => {
+  const base = config.profiles.find(p => p.model === 'gemma4-31b');
+  const p = { ...base, runtime: { ...base.runtime, 'spec-type': 'draft-mtp', 'spec-draft-n-max': 2, 'spec-draft-device': 'CUDA1', 'spec-draft-type-k': 'q8_0', 'spec-draft-type-v': 'q8_0' } };
+  const aliases = { 'ctx-checkpoints': 'swa-checkpoints', 'spec-draft-model': 'model-draft', 'spec-draft-device': 'device-draft', 'spec-draft-type-k': 'cache-type-k-draft', 'spec-draft-type-v': 'cache-type-v-draft' };
+  const args = Object.entries(profileOptions(config, p)).flatMap(([k, v]) => typeof v === 'boolean' ? [v ? `--${k}` : `--no-${k}`] : [`--${aliases[k] ?? k}`, String(v)]);
+  const entry = { tags: [profileTag(config, p)], status: { args } };
+  assertProfile(config, p, entry);
+  args.push('--ctx-checkpoints', '99');
+  assert.throws(() => assertProfile(config, p, entry), /ctx-checkpoints differs/);
 });

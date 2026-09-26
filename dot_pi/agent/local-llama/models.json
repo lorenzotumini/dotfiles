@@ -6,7 +6,8 @@
     "port": 8080,
     "apiKeyFile": "~/.config/llama/api-key",
     "cacheDirectory": "~/.cache/pi-local-llama",
-    "loadTimeoutMs": 300000
+    "loadTimeoutMs": 300000,
+    "maxModels": 2
   },
   "runtimeDefaults": {
     "n-gpu-layers": "all",
@@ -15,27 +16,51 @@
     "parallel": 1,
     "jinja": true,
     "reasoning": "auto",
-    "fit": "off"
+    "fit": "off",
+    "batch-size": 512,
+    "ubatch-size": 128,
+    "cache-ram": 1024,
+    "ctx-checkpoints": 4
   },
   "policies": {
     "qwen35": {
       "thinking": "toggle",
       "preserveThinking": false,
-      "levels": { "off": "none", "low": "low", "medium": "medium", "high": "high" },
-      "budgets": { "low": 512, "medium": 2048, "high": 6144 },
+      "levels": {"off": "none", "low": "low", "medium": "medium", "high": "high"},
+      "budgets": {"low": 512, "medium": 2048, "high": 6144},
       "sampling": {
-        "off": { "temperature": 0.7, "top_p": 0.8, "top_k": 20, "min_p": 0, "presence_penalty": 1.5, "repeat_penalty": 1 },
-        "on": { "temperature": 0.6, "top_p": 0.95, "top_k": 20, "min_p": 0, "presence_penalty": 0, "repeat_penalty": 1 }
+        "off": {"temperature": 0.7, "top_p": 0.8, "top_k": 20, "min_p": 0, "presence_penalty": 1.5, "repeat_penalty": 1},
+        "on": {"temperature": 0.6, "top_p": 0.95, "top_k": 20, "min_p": 0, "presence_penalty": 0, "repeat_penalty": 1}
       }
     },
     "qwen38": {
       "thinking": "effort",
       "preserveThinking": true,
-      "levels": { "off": "none", "low": "low", "medium": "medium", "xhigh": "xhigh" },
-      "budgets": { "low": 2048, "medium": 8192, "xhigh": 24576 },
+      "levels": {"off": "none", "low": "low", "medium": "medium", "xhigh": "xhigh"},
+      "budgets": {"low": 2048, "medium": 8192, "xhigh": 24576},
       "sampling": {
-        "off": { "temperature": 0.7, "top_p": 0.8, "top_k": 20, "min_p": 0, "presence_penalty": 1.5, "repeat_penalty": 1 },
-        "on": { "temperature": 1, "top_p": 0.95, "top_k": 20, "min_p": 0, "presence_penalty": 0, "repeat_penalty": 1 }
+        "off": {"temperature": 0.7, "top_p": 0.8, "top_k": 20, "min_p": 0, "presence_penalty": 1.5, "repeat_penalty": 1},
+        "on": {"temperature": 1, "top_p": 0.95, "top_k": 20, "min_p": 0, "presence_penalty": 0, "repeat_penalty": 1}
+      }
+    },
+    "qwen36": {
+      "thinking": "toggle",
+      "preserveThinking": true,
+      "levels": {"off": "none", "low": "low", "medium": "medium", "high": "high"},
+      "budgets": {"low": 2048, "medium": 8192, "high": 16384},
+      "sampling": {
+        "off": {"temperature": 0.7, "top_p": 0.8, "top_k": 20, "min_p": 0, "presence_penalty": 1.5, "repeat_penalty": 1},
+        "on": {"temperature": 0.6, "top_p": 0.95, "top_k": 20, "min_p": 0, "presence_penalty": 0, "repeat_penalty": 1}
+      }
+    },
+    "gemma4": {
+      "thinking": "toggle",
+      "preserveThinking": false,
+      "levels": {"off": "none", "low": "low", "medium": "medium", "high": "high"},
+      "budgets": {"low": 1024, "medium": 4096, "high": 8192},
+      "sampling": {
+        "off": {"temperature": 1.0, "top_p": 0.95, "top_k": 64, "min_p": 0, "repeat_penalty": 1},
+        "on": {"temperature": 1.0, "top_p": 0.95, "top_k": 64, "min_p": 0, "repeat_penalty": 1}
       }
     }
   },
@@ -50,42 +75,69 @@
       "projector": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/mmproj-Qwen3.8-27B-BF16.gguf",
       "policy": "qwen38",
       "embeddedMtp": true,
-      "source": { "repo": "ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF", "revision": "d562806dbafae37109975e970aae91b43e73b440" }
+      "source": {"repo": "ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF", "revision": "d562806dbafae37109975e970aae91b43e73b440"}
     },
     "qwen38-q4": {
       "path": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/Qwen3.8-27B-UD-Q4_K_M.gguf",
       "projector": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/mmproj-Qwen3.8-27B-BF16.gguf",
       "policy": "qwen38",
       "embeddedMtp": true,
-      "source": { "repo": "unsloth/Qwen3.8-27B-GGUF", "revision": "4ca720788d1e01f1bff70c033e0d0028fd02e502" }
+      "source": {"repo": "unsloth/Qwen3.8-27B-GGUF", "revision": "4ca720788d1e01f1bff70c033e0d0028fd02e502"}
     },
     "qwen38-orca": {
       "path": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/Qwen3.8-27B-Uncensored-Q4_K_M.gguf",
       "projector": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/mmproj-Qwen3.8-27B-Uncensored-f16.gguf",
       "policy": "qwen38",
-      "source": { "repo": "orcarouter/Qwen3.8-27B-Uncensored-GGUF" }
+      "source": {"repo": "orcarouter/Qwen3.8-27B-Uncensored-GGUF"}
+    },
+    "qwen36-35b-a3b": {
+      "path": "/mnt/shared/AI/models/llama.cpp/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q4_K_S.gguf",
+      "projector": "/mnt/shared/AI/models/llama.cpp/qwen3.6-35b-a3b/mmproj-F16.gguf",
+      "policy": "qwen36"
+    },
+    "gemma4-31b": {
+      "path": "/mnt/shared/AI/models/llama.cpp/gemma4-31b-qat/gemma-4-31B-it-qat-UD-Q4_K_XL.gguf",
+      "projector": "/mnt/shared/AI/models/llama.cpp/gemma4-31b-qat/mmproj-BF16.gguf",
+      "draftPath": "/mnt/shared/AI/models/llama.cpp/gemma4-31b-qat/mtp-gemma-4-31B-it.gguf",
+      "policy": "gemma4",
+      "source": { "repo": "unsloth/gemma-4-31B-it-qat-GGUF" }
     }
   },
   "profiles": [
     {
-      "id": "qwen3.5-4b", "name": "FAST · Qwen3.5 4B · 64K", "model": "qwen35-4b",
-      "context": 65536, "maxOutput": 16384, "defaultThinking": "off", "vision": true,
-      "runtime": { "device": "CUDA0", "split-mode": "none", "cache-type-k": "q8_0", "cache-type-v": "q8_0" }
+      "id": "qwen3.5-4b", "name": "FAST · Qwen3.5 4B · 96K · Vision · GPU0", "model": "qwen35-4b",
+      "context": 98304, "maxOutput": 16384, "defaultThinking": "off", "vision": true,
+      "runtime": {"device": "CUDA0", "split-mode": "none", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "none", "mmproj-device": "CUDA0"}
     },
     {
-      "id": "qwen3.8-27b-q4", "name": "GENERAL · Qwen3.8 Unsloth Q4 · 64K", "model": "qwen38-q4",
-      "context": 65536, "maxOutput": 32768, "defaultThinking": "medium", "vision": true,
-      "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3 }
+      "id": "qwen3.6-35b-a3b", "name": "CODE FAST · Qwen3.6 MoE Q4 · 96K", "model": "qwen36-35b-a3b",
+      "context": 98304, "maxOutput": 32768, "defaultThinking": "medium", "vision": false,
+      "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "2,5", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "none"}
     },
     {
-      "id": "qwen3.8-27b-gsq", "name": "LONG CTX · Qwen3.8 GSQ · 128K", "model": "qwen38-gsq",
-      "context": 131072, "maxOutput": 32768, "defaultThinking": "medium", "vision": true,
-      "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q4_0", "cache-type-v": "q4_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3 }
+      "id": "qwen3.8-27b-q4", "name": "CODE DEEP · Qwen3.8 Q4 · 128K + MTP", "model": "qwen38-q4",
+      "context": 131072, "maxOutput": 32768, "defaultThinking": "medium", "vision": false,
+      "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "5,11", "cache-type-k": "q5_0", "cache-type-v": "q5_0", "spec-type": "draft-mtp", "spec-draft-n-max": 2, "spec-draft-type-k": "q8_0", "spec-draft-type-v": "q8_0"}
     },
     {
-      "id": "qwen3.8-27b-orca", "name": "UNRESTRICTED · OrcaRouter Qwen3.8 · 64K", "model": "qwen38-orca",
-      "context": 65536, "maxOutput": 32768, "defaultThinking": "off", "vision": true,
-      "runtime": { "device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,2", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "none" }
+      "id": "gemma-4-31b", "name": "CHAT · Gemma 4 31B QAT Q4 · 40K · Vision + MTP", "model": "gemma4-31b",
+      "context": 40960, "maxOutput": 8192, "defaultThinking": "off", "vision": true,
+      "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "5,11", "cache-type-k": "q5_0", "cache-type-v": "q5_0", "spec-type": "draft-mtp", "spec-draft-n-max": 2, "spec-draft-device": "CUDA1", "spec-draft-type-k": "q8_0", "spec-draft-type-v": "q8_0", "mmproj-device": "CUDA1"}
+    },
+    {
+      "id": "qwen3.8-27b-gsq", "name": "LONG · Qwen3.8 IQ3 · 256K · Q4 KV", "model": "qwen38-gsq",
+      "context": 262144, "maxOutput": 32768, "defaultThinking": "medium", "vision": false,
+      "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "1,3", "cache-type-k": "q4_0", "cache-type-v": "q4_0", "spec-type": "none"}
+    },
+    {
+      "id": "qwen3.8-27b-gsq-solo", "name": "AGENT SOLO · Qwen3.8 IQ3 · 128K · GPU1", "model": "qwen38-gsq",
+      "context": 131072, "maxOutput": 32768, "defaultThinking": "medium", "vision": false,
+      "runtime": {"device": "CUDA1", "split-mode": "none", "cache-type-k": "q5_0", "cache-type-v": "q5_0", "spec-type": "none"}
+    },
+    {
+      "id": "qwen3.8-27b-orca", "name": "SECURITY · Qwen3.8 Orca Q4 · 128K", "model": "qwen38-orca",
+      "context": 131072, "maxOutput": 32768, "defaultThinking": "medium", "vision": false,
+      "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "2,5", "cache-type-k": "q8_0", "cache-type-v": "q8_0", "spec-type": "none"}
     }
   ]
 }

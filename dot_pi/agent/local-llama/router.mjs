@@ -73,9 +73,23 @@ async function reachable(c) {
 }
 
 export function serverArgs(c, ini = paths(c).ini) {
-  return ['--models-preset', ini, '--models-max', '1', '--no-models-autoload',
+  return ['--models-preset', ini, '--models-max', String(c.server.maxModels ?? 1), '--no-models-autoload',
     '--host', c.server.host, '--port', String(c.server.port), '--api-key-file', c.server.apiKeyFile,
     '--cors-origins', 'localhost', '--metrics', '--no-ui'];
+}
+
+// Serialize residency changes made by separate Pi processes. Requests to already
+// loaded models continue normally. A crash leaves an explicit recoverable lock.
+export function acquireModelOperation(c) {
+  mkdirSync(c.server.cacheDirectory, { recursive: true, mode: 0o700 });
+  const lock = join(c.server.cacheDirectory, 'model-operation.lock');
+  try { mkdirSync(lock, { mode: 0o700 }); }
+  catch (error) {
+    if (error.code === 'EEXIST') throw new Error(`Another session is changing local model residency. Retry after it finishes. If that process crashed, remove the empty directory ${lock}.`);
+    throw error;
+  }
+  let released = false;
+  return () => { if (!released) { rmdirSync(lock); released = true; } };
 }
 
 export async function ensureRouter(c, { foreground = false, signal } = {}) {
@@ -171,14 +185,17 @@ export async function reloadRouter(c, signal) {
   // Pi can outlive the server; a stale PID record does not mean another router owns the port.
   await ensureRouter(c, { signal });
   if (!ownedProcess(c)) throw new Error('A router is running at the configured address, but this launcher cannot verify ownership. Stop it from the terminal or service that started it, then run /local:reload again.');
-  const active = await catalog(c, signal);
-  if (active.some((m) => ['loading', 'downloading'].includes(m.status.value))) throw new Error('A model load is in progress; reload after it finishes.');
-  for (const model of active.filter((m) => m.status.value === 'loaded')) {
-    const slots = await request(c, `/slots?model=${encodeURIComponent(model.id)}`, { signal });
-    if (!Array.isArray(slots) || slots.some((s) => s.is_processing)) throw new Error('A model is busy; reload after its request finishes.');
-  }
-  generate(c);
-  return request(c, '/models?reload=1', { signal });
+  const release = acquireModelOperation(c);
+  try {
+    const active = await catalog(c, signal);
+    if (active.some((m) => ['loading', 'downloading'].includes(m.status.value))) throw new Error('A model load is in progress; reload after it finishes.');
+    for (const model of active.filter((m) => m.status.value === 'loaded')) {
+      const slots = await request(c, `/slots?model=${encodeURIComponent(model.id)}`, { signal });
+      if (!Array.isArray(slots) || slots.some((s) => s.is_processing)) throw new Error('A model is busy; reload after its request finishes.');
+    }
+    generate(c);
+    return await request(c, '/models?reload=1', { signal });
+  } finally { release(); }
 }
 
 async function main() {

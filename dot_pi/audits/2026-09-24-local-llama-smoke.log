@@ -1,0 +1,63 @@
+info FAST · Qwen3.5 4B · 128K · GPU0 ready · thinking off
+Selected through /local: qwen3.5-4b 131072 off
+Pi streaming completion passed: qwen3.5-4b
+Tool round trip passed
+Long prompt retrieval passed: qwen3.5-4b {"usage":{"completion_tokens":8,"prompt_tokens":15313,"total_tokens":15321,"prompt_tokens_details":{"cached_tokens":0}},"timings":{"cache_n":0,"prompt_n":15313,"prompt_ms":4864.246,"prompt_per_token_ms":0.3176546725004898,"prompt_per_second":3148.072692047236,"predicted_n":8,"predicted_ms":75.785,"predicted_per_token_ms":10.82642857142857,"predicted_per_second":92.36656330408393}}
+info AGENT SOLO · Qwen3.8 IQ3 · 96K · GPU1 ready · thinking medium
+Selected through /local: qwen3.8-27b-gsq-solo 98304 medium
+Pi streaming completion passed: qwen3.8-27b-gsq-solo
+Tool round trip passed
+Concurrent completions passed: qwen3.5-4b, qwen3.8-27b-gsq-solo
+Long prompt retrieval passed: qwen3.8-27b-gsq-solo {"usage":{"completion_tokens":8,"prompt_tokens":15313,"total_tokens":15321,"prompt_tokens_details":{"cached_tokens":0}},"timings":{"cache_n":0,"prompt_n":15313,"prompt_ms":18118.823,"prompt_per_token_ms":1.1832314373408215,"prompt_per_second":845.1431972154041,"predicted_n":8,"predicted_ms":258.123,"predicted_per_token_ms":36.87471428571428,"predicted_per_second":27.118854189669268}}
+Thinking template accepted: low
+Thinking template accepted: medium
+Thinking template accepted: xhigh
+info CODE FAST · Qwen3.6 MoE Q4 · 96K ready · thinking medium
+Selected through /local: qwen3.6-35b-a3b 98304 medium
+Pi streaming completion passed: qwen3.6-35b-a3b
+Tool round trip passed
+Long prompt retrieval passed: qwen3.6-35b-a3b {"usage":{"completion_tokens":8,"prompt_tokens":15313,"total_tokens":15321,"prompt_tokens_details":{"cached_tokens":0}},"timings":{"cache_n":0,"prompt_n":15313,"prompt_ms":11038.173,"prompt_per_token_ms":0.7208367400248156,"prompt_per_second":1387.2766806608304,"predicted_n":8,"predicted_ms":81.139,"predicted_per_token_ms":11.591285714285714,"predicted_per_second":86.2717065776014}}
+info CODE DEEP · Qwen3.8 Q4 · 96K + MTP ready · thinking medium
+Selected through /local: qwen3.8-27b-q4 98304 medium
+Pi streaming completion passed: qwen3.8-27b-q4
+Tool round trip passed
+Long prompt retrieval passed: qwen3.8-27b-q4 {"usage":{"completion_tokens":8,"prompt_tokens":15313,"total_tokens":15321,"prompt_tokens_details":{"cached_tokens":0}},"timings":{"cache_n":0,"prompt_n":15313,"prompt_ms":17586.777,"prompt_per_token_ms":1.1484867106380199,"prompt_per_second":870.7109892847337,"predicted_n":8,"predicted_ms":182.353,"predicted_per_token_ms":26.050428571428572,"predicted_per_second":38.3870843912631,"draft_n":6,"draft_n_accepted":6}}
+Thinking template accepted: low
+Thinking template accepted: medium
+Thinking template accepted: xhigh
+info CHAT · Gemma 4 31B Q4 · 32K + MTP ready · thinking off
+Selected through /local: gemma-4-31b 32768 off
+Pi streaming completion passed: gemma-4-31b
+Tool round trip passed
+Long prompt retrieval passed: gemma-4-31b {"usage":{"completion_tokens":9,"prompt_tokens":15315,"total_tokens":15324,"prompt_tokens_details":{"cached_tokens":0}},"timings":{"cache_n":0,"prompt_n":15315,"prompt_ms":18825.791,"prompt_per_token_ms":1.2292387202089456,"prompt_per_second":813.5116341193844,"predicted_n":9,"predicted_ms":224.29,"predicted_per_token_ms":28.03625,"predicted_per_second":35.66810825270855,"draft_n":6,"draft_n_accepted":6}}
+info LONG · Qwen3.8 IQ3 · 256K · Q4 KV ready · thinking medium
+Selected through /local: qwen3.8-27b-gsq 262144 medium
+Pi streaming completion passed: qwen3.8-27b-gsq
+Tool round trip passed
+Long prompt retrieval passed: qwen3.8-27b-gsq {"usage":{"completion_tokens":8,"prompt_tokens":15313,"total_tokens":15321,"prompt_tokens_details":{"cached_tokens":0}},"timings":{"cache_n":0,"prompt_n":15313,"prompt_ms":15712.886,"prompt_per_token_ms":1.026114151374649,"prompt_per_second":974.5504422293905,"predicted_n":8,"predicted_ms":263.87,"predicted_per_token_ms":37.69571428571429,"predicted_per_second":26.528214651153977}}
+Thinking template accepted: low
+Thinking template accepted: medium
+Thinking template accepted: xhigh
+info SECURITY · Qwen3.8 Orca Q4 · 128K ready · thinking medium
+Selected through /local: qwen3.8-27b-orca 131072 medium
+Pi streaming completion passed: qwen3.8-27b-orca
+Tool round trip passed
+Long prompt retrieval passed: qwen3.8-27b-orca {"usage":{"completion_tokens":8,"prompt_tokens":15313,"total_tokens":15321,"prompt_tokens_details":{"cached_tokens":0}},"timings":{"cache_n":0,"prompt_n":15313,"prompt_ms":16241.887,"prompt_per_token_ms":1.0606600274276758,"prompt_per_second":942.809169895099,"predicted_n":8,"predicted_ms":311.077,"predicted_per_token_ms":44.439571428571426,"predicted_per_second":22.50246723480039}}
+Thinking template accepted: low
+Thinking template accepted: medium
+Thinking template accepted: xhigh
+info VISION FAST · Qwen3.5 4B · 64K · GPU0 ready · thinking off
+Selected through /local: qwen3.5-4b-vision 65536 off
+Pi streaming completion passed: qwen3.5-4b-vision
+Tool round trip passed
+Vision input passed: qwen3.5-4b-vision
+info VISION · Gemma 4 31B Q4 · 16K ready · thinking off
+Selected through /local: gemma-4-31b-vision 16384 off
+Pi streaming completion passed: gemma-4-31b-vision
+Tool round trip passed
+Vision input passed: gemma-4-31b-vision
+Integration smoke passed. Scratch metadata: /tmp/pi-local-smoke-FuRGo9
+
+Additional check: Gemma thinking toggle template passed (vision profile).
+Gemma vision post-image free VRAM: CUDA0 1233 MiB; CUDA1 848 MiB.
+Unit suite: 12 tests passed, 0 failed.

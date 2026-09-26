@@ -1,7 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent';
 import { setTimeout as delay } from 'node:timers/promises';
-import { apiKey, assertProfile, catalog, checkFiles, decorateModel, profileReloadHint, readConfig, request, requestPayload, serverUrl, verifyLoaded } from '../local-llama/core.mjs';
-import { ensureRouter, paths, reloadRouter } from '../local-llama/router.mjs';
+import { apiKey, assertProfile, canCoexist, catalog, checkFiles, decorateModel, profileReloadHint, readConfig, request, requestPayload, serverUrl, verifyLoaded } from '../local-llama/core.mjs';
+import { acquireModelOperation, ensureRouter, paths, reloadRouter } from '../local-llama/router.mjs';
 
 type LlamaMetrics = { promptTokens: number; promptSeconds: number; generatedTokens: number; generatedSeconds: number };
 
@@ -143,6 +143,7 @@ export default function localLlama(pi: ExtensionAPI) {
       operation = new AbortController();
       let loading: string | undefined;
       let signal: AbortSignal | undefined;
+      let release: (() => void) | undefined;
       try {
         install(ctx);
         signal = AbortSignal.any([operation.signal, AbortSignal.timeout(config.server.loadTimeoutMs)]);
@@ -158,6 +159,7 @@ export default function localLlama(pi: ExtensionAPI) {
           return;
         }
         if (arg === 'unload') {
+          release = acquireModelOperation(config);
           const models = await catalog(config, signal);
           const loaded = models.filter((model: any) => model.status.value === 'loaded');
           if (!loaded.length) {
@@ -197,13 +199,30 @@ export default function localLlama(pi: ExtensionAPI) {
         checkFiles(config, [p]);
         ctx.ui.setStatus('local-llama', `loading ${p.id}…`);
         await ensureRouter(config, { signal });
+        release = acquireModelOperation(config);
         const models = await catalog(config, signal);
         const target = models.find((m: any) => m.id === p.id);
         assertProfile(config, p, target);
         if (models.some((m: any) => m.id !== p.id && ['loading', 'downloading'].includes(m.status.value))) throw new Error('Another model operation is in progress. Try again after it finishes.');
-        for (const other of models.filter((m: any) => m.id !== p.id && m.status.value === 'loaded')) {
+        const conflicting = models.filter((m: any) => {
+          if (m.id === p.id || m.status.value !== 'loaded') return false;
+          const other = config.profiles.find((profile: any) => profile.id === m.id);
+          if (!canCoexist(config, p, other)) return true;
+          // Do not trust edited placement until it matches the loaded instance.
+          try { assertProfile(config, other, m); return false; } catch { return true; }
+        });
+        for (const other of conflicting) {
           const slots = await request(config, `/slots?model=${encodeURIComponent(other.id)}`, { signal });
           if (!Array.isArray(slots) || slots.some((s: any) => s.is_processing)) throw new Error(`${other.id} is busy in another session; try again after it finishes.`);
+        }
+        for (const other of conflicting) {
+          const result = await request(config, '/models/unload', { method: 'POST', body: JSON.stringify({ model: other.id }), signal });
+          if (result.success === false) throw new Error(result.error || `Could not unload ${other.id}.`);
+        }
+        while (conflicting.length) {
+          const current = await catalog(config, signal);
+          if (conflicting.every((m: any) => current.find((entry: any) => entry.id === m.id)?.status.value === 'unloaded')) break;
+          await delay(250, undefined, { signal });
         }
         if (target.status.value !== 'loaded') {
           if (target.status.value === 'unloaded') loading = p.id;
@@ -226,7 +245,9 @@ export default function localLlama(pi: ExtensionAPI) {
       } catch (error) {
         if (loading && signal?.aborted) await request(config, '/models/unload', { method: 'POST', body: JSON.stringify({ model: loading }) }).catch(() => {});
         ctx.ui.notify(`Local llama: ${(error as Error).message}`, 'error');
-      } finally { operation = undefined; status(ctx); }
+      } finally {
+        try { release?.(); } finally { operation = undefined; status(ctx); }
+      }
     },
   };
   pi.registerCommand('local', {

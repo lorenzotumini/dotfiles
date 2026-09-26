@@ -5,10 +5,18 @@ import { isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'];
-const RESERVED = new Set(['model', 'mmproj', 'ctx-size', 'host', 'port', 'models-preset', 'models-dir', 'models-max', 'models-autoload', 'api-key', 'api-key-file', 'tags', 'alias']);
+const RESERVED = new Set(['model', 'mmproj', 'model-draft', 'spec-draft-model', 'ctx-size', 'host', 'port', 'models-preset', 'models-dir', 'models-max', 'models-autoload', 'api-key', 'api-key-file', 'tags', 'alias']);
 // Explicit names avoid aliases overriding generated fields. Extend this list for new runtime features.
-const RUNTIME = new Set(['device', 'n-gpu-layers', 'split-mode', 'tensor-split', 'main-gpu', 'flash-attn', 'threads', 'threads-batch', 'parallel', 'jinja', 'reasoning', 'fit', 'cache-type-k', 'cache-type-v', 'batch-size', 'ubatch-size', 'cache-ram', 'ctx-checkpoints', 'spec-type', 'spec-draft-n-max', 'spec-draft-type-k', 'spec-draft-type-v']);
+const RUNTIME = new Set(['device', 'n-gpu-layers', 'split-mode', 'tensor-split', 'main-gpu', 'mmproj-device', 'flash-attn', 'threads', 'threads-batch', 'parallel', 'jinja', 'reasoning', 'fit', 'cache-type-k', 'cache-type-v', 'batch-size', 'ubatch-size', 'cache-ram', 'ctx-checkpoints', 'spec-type', 'spec-draft-n-max', 'spec-draft-device', 'spec-draft-type-k', 'spec-draft-type-v']);
 const SAMPLERS = new Set(['temperature', 'top_p', 'top_k', 'min_p', 'presence_penalty', 'frequency_penalty', 'repeat_penalty']);
+// Build 10964 normalizes these INI options to their older CLI aliases.
+const ROUTER_ALIASES = {
+  'ctx-checkpoints': ['swa-checkpoints'],
+  'spec-draft-model': ['model-draft'],
+  'spec-draft-device': ['device-draft'],
+  'spec-draft-type-k': ['cache-type-k-draft'],
+  'spec-draft-type-v': ['cache-type-v-draft'],
+};
 const fail = (message) => { throw new Error(`Local llama: ${message}`); };
 const record = (x) => x && typeof x === 'object' && !Array.isArray(x);
 const integer = (x, min) => Number.isSafeInteger(x) && x >= min;
@@ -36,6 +44,8 @@ export function validateConfig(raw) {
   if (!integer(c.server.port, 1) || c.server.port > 65535) fail('invalid server port');
   if (!safe(c.server.binary) || typeof c.server.binary !== 'string') fail('invalid server binary');
   if (!integer(c.server.loadTimeoutMs, 1000)) fail('invalid load timeout');
+  c.server.maxModels ??= 1;
+  if (![1, 2].includes(c.server.maxModels)) fail('server.maxModels must be 1 or 2');
   c.server.apiKeyFile = expandPath(c.server.apiKeyFile);
   c.server.cacheDirectory = expandPath(c.server.cacheDirectory);
   if (!record(c.runtimeDefaults) || !record(c.models) || !record(c.policies) || !Array.isArray(c.profiles) || !c.profiles.length) fail('models, policies, defaults and profiles are required');
@@ -68,6 +78,7 @@ export function validateConfig(raw) {
     if (!record(model) || !c.policies[model.policy]) fail(`${id}: unknown policy`);
     model.path = expandPath(model.path);
     if (model.projector) model.projector = expandPath(model.projector);
+    if (model.draftPath) model.draftPath = expandPath(model.draftPath);
   }
   const seen = new Set();
   for (const p of c.profiles) {
@@ -82,18 +93,41 @@ export function validateConfig(raw) {
     const runtime = { ...c.runtimeDefaults, ...p.runtime };
     if (runtime.parallel !== 1) fail(`${p.id}: this integration currently requires parallel = 1`);
     if (!runtime.device || !runtime['cache-type-k'] || !runtime['cache-type-v']) fail(`${p.id}: device and KV cache types must be explicit`);
-    if (runtime['spec-type'] === 'draft-mtp' && !model.embeddedMtp) fail(`${p.id}: embedded MTP has not been confirmed`);
+    if (runtime['spec-type'] === 'draft-mtp' && !model.embeddedMtp && !model.draftPath) fail(`${p.id}: MTP drafter has not been configured`);
   }
   return c;
 }
 
 export function profileOptions(c, p) {
   const model = c.models[p.model];
+  const runtime = { ...c.runtimeDefaults, ...p.runtime };
   return {
-    ...c.runtimeDefaults, ...p.runtime,
+    ...runtime,
     model: model.path, 'ctx-size': p.context,
     ...(p.vision ? { mmproj: model.projector } : {}),
+    ...(model.draftPath && runtime['spec-type'] === 'draft-mtp' ? { 'spec-draft-model': model.draftPath } : {}),
   };
+}
+
+// Only explicitly placed, disjoint GPU profiles may remain resident together.
+// Unknown profiles and CPU placement have no shared memory budget here.
+export function canCoexist(c, a, b) {
+  if (c.server.maxModels !== 2 || !a || !b || a.id === b.id) return false;
+  const devices = (p) => {
+    const opts = profileOptions(c, p);
+    const list = String(opts.device).split(',');
+    if (p.vision) {
+      if (!opts['mmproj-device']) return null;
+      list.push(opts['mmproj-device']);
+    }
+    if (opts['spec-type'] === 'draft-mtp') {
+      if (opts['spec-draft-model'] && !opts['spec-draft-device']) return null;
+      if (opts['spec-draft-device']) list.push(...String(opts['spec-draft-device']).split(','));
+    }
+    return list.every(d => /^CUDA\d+$/.test(d)) ? new Set(list) : null;
+  };
+  const left = devices(a), right = devices(b);
+  return Boolean(left && right && [...left].every(d => !right.has(d)));
 }
 
 export function profileTag(c, p) {
@@ -109,7 +143,10 @@ export function renderIni(c) {
 }
 
 export function checkFiles(c, profiles = c.profiles) {
-  const paths = new Set(profiles.flatMap((p) => [c.models[p.model].path, ...(p.vision ? [c.models[p.model].projector] : [])]));
+  const paths = new Set(profiles.flatMap((p) => {
+    const opts = profileOptions(c, p);
+    return [opts.model, opts.mmproj, opts['spec-draft-model']].filter(Boolean);
+  }));
   for (const path of paths) {
     try { accessSync(path, constants.R_OK); } catch { fail(`model file is missing or unreadable: ${path}`); }
   }
@@ -178,7 +215,7 @@ export async function catalog(c, signal) {
 }
 
 export function profileReloadHint(p) {
-  return `Run /local:reload, then /local ${p.id}, and retry your message. Reloading or restarting Pi alone does not reload the llama server. You can continue this conversation.`;
+  return `Run /local:reload, then select ${p.id} in /local, and retry your message. Reloading or restarting Pi alone does not reload the llama server. You can continue this conversation.`;
 }
 
 export function assertProfile(c, p, entry) {
@@ -190,8 +227,9 @@ export function assertProfile(c, p, entry) {
   if (!(entry.tags ?? []).includes(profileTag(c, p)) && !String(tags ?? '').split(',').includes(profileTag(c, p))) fail(`${p.id}: router settings differ from models.json. ${profileReloadHint(p)}`);
   for (const [key, value] of Object.entries(profileOptions(c, p))) {
     const flag = typeof value === 'boolean' && !value ? `--no-${key}` : `--${key}`;
-    const index = args.indexOf(flag);
-    if (index < 0 || (typeof value !== 'boolean' && args[index + 1] !== String(value))) fail(`${p.id}: effective router option ${key} differs from the profile. ${profileReloadHint(p)}`);
+    const flags = [flag, ...(ROUTER_ALIASES[key] ?? []).map(alias => `--${alias}`)];
+    const indices = args.flatMap((arg, index) => flags.includes(arg) ? [index] : []);
+    if (!indices.length || (typeof value !== 'boolean' && indices.some(index => args[index + 1] !== String(value)))) fail(`${p.id}: effective router option ${key} differs from the profile. ${profileReloadHint(p)}`);
   }
   if (!p.vision && args.includes('--mmproj')) fail(`${p.id}: unexpected vision projector. ${profileReloadHint(p)}`);
 }
