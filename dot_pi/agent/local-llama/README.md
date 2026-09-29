@@ -68,18 +68,21 @@ Available profiles (K = 1024 tokens; context includes input, thinking and output
 | CHAT / `gemma-4-31b` | 40K | Both, Q5 KV, projector and MTP drafter on 5060 Ti | off / on |
 | LONG / `qwen3.8-27b-gsq` | 240K | Both, Q4 KV; F16 MTP draft cache | medium / on |
 | AGENT SOLO / `qwen3.8-27b-gsq-solo` | 128K | 5060 Ti, Q5 KV | medium / off |
-| SECURITY / `qwen3.8-27b-orca` | 112K | Both, Q5 KV; F16 MTP draft cache | medium / on |
+| SECURITY / `qwen3.8-27b-orca` | 144K | Both, Q5 KV; F16 MTP draft cache | medium / on |
 
 Start with CODE FAST for routine agent work, CODE DEEP for harder coding,
 and CHAT for general conversation. These role assignments are recommendations,
-not measured quality rankings. SECURITY uses the downloaded lower-refusal Orca
-fine-tune; lower refusal does not establish security expertise or accuracy.
+not measured quality rankings. SECURITY uses OrcaSAQ-2, a text-only compressed
+Qwen3.8 variant. Its model card reports quantization fidelity, not lower
+refusal behavior, security expertise, or accuracy.
 LONG prioritizes a large context with IQ3 weights, Q4 KV and embedded MTP,
 trading precision for space. Its 240K window leaves more working memory than
-the tested 256K MTP configuration. SECURITY uses 112K Q5 KV so its embedded
-MTP head fits with about 1.2 GiB free on the tighter card. At 112K, Q8 KV
-with MTP left only about 0.3 GiB free. Q5 KV trades some cache precision for
-the acceleration while retaining the model's Q4_K_M weights. The Q4-weight, Q8-KV coding profile is the more conservative daily
+the tested 256K MTP configuration. The previous Orca Q4 profile used 112K Q5
+KV with MTP. OrcaSAQ-2 uses 144K
+with Q5 KV and MTP, leaving about 1.3 GiB free on each card after a short
+generation; 160K left about 0.9 GiB on the tighter card, while 176K left about
+0.45 GiB. See the [OrcaSAQ context audit](../../audits/2026-09-28-orcasaq-context.md).
+Q5 KV trades some cache precision for the acceleration. The Q4-weight, Q8-KV coding profile is the more conservative daily
 choice. FAST includes vision so it can share the system with AGENT SOLO on the 5060 Ti. CHAT supports images and uses the paired Gemma MTP assistant. Q5 KV makes the larger CODE DEEP, CHAT, and AGENT SOLO windows fit with about 1 GiB or more free on their tightest card in a short, isolated probe; Q8 KV retains slightly more cache precision.
 
 Calibrated on RTX 3070 Ti 8 GB + RTX 5060 Ti 16 GB with llama.cpp build 10964.

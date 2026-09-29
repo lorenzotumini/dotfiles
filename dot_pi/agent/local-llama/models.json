@@ -84,12 +84,11 @@
       "embeddedMtp": true,
       "source": {"repo": "unsloth/Qwen3.8-27B-GGUF", "revision": "4ca720788d1e01f1bff70c033e0d0028fd02e502"}
     },
-    "qwen38-orca": {
-      "path": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/Qwen3.8-27B-Uncensored-Q4_K_M.gguf",
-      "projector": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/mmproj-Qwen3.8-27B-Uncensored-f16.gguf",
+    "orcasaq-27b": {
+      "path": "/mnt/shared/AI/models/llama.cpp/orcasaq-27b/OrcaSAQ-2-27B-Uncensored.gguf",
       "policy": "qwen38",
       "embeddedMtp": true,
-      "source": {"repo": "orcarouter/Qwen3.8-27B-Uncensored-GGUF"}
+      "source": {"repo": "orcarouter/OrcaSAQ-2-27B"}
     },
     "qwen36-35b-a3b": {
       "path": "/mnt/shared/AI/models/llama.cpp/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q4_K_S.gguf",
@@ -136,9 +135,9 @@
       "runtime": {"device": "CUDA1", "split-mode": "none", "cache-type-k": "q5_0", "cache-type-v": "q5_0", "spec-type": "none"}
     },
     {
-      "id": "qwen3.8-27b-orca", "name": "SECURITY · Qwen3.8 Orca Q4 · 112K + MTP", "model": "qwen38-orca",
-      "context": 114688, "maxOutput": 32768, "defaultThinking": "medium", "vision": false,
-      "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "2,5", "cache-type-k": "q5_0", "cache-type-v": "q5_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3, "spec-draft-type-k": "f16", "spec-draft-type-v": "f16"}
+      "id": "qwen3.8-27b-orca", "name": "SECURITY · OrcaSAQ-2 27B · 144K + MTP", "model": "orcasaq-27b",
+      "context": 147456, "maxOutput": 32768, "defaultThinking": "medium", "vision": false,
+      "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "2,5", "flash-attn": "on", "cache-type-k": "q5_0", "cache-type-v": "q5_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3, "spec-draft-type-k": "f16", "spec-draft-type-v": "f16"}
     }
   ]
 }
