@@ -104,6 +104,7 @@ alias v='nvim'
 alias cx='codex'
 alias ..='cd ..'
 alias ...='cd ../..'
+alias -s {jpg,jpeg,png,gif,webp,pdf,mp4,mkv,mp3,txt,md,docx,xlsx}=xdg-open
 
 # Compact views of what is running now and what is enabled at boot/login.
 services() {
