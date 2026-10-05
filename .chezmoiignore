@@ -15,6 +15,7 @@ tests/**
 .glzr/glazewm/errors.log
 .glzr/zebar/errors.log
 .luarc.json
+__pycache__/
 
 # OS-specific config trees
 {{ if eq .chezmoi.os "windows" }}

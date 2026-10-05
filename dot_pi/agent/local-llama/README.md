@@ -69,12 +69,18 @@ Available profiles (K = 1024 tokens; context includes input, thinking and output
 | LONG / `qwen3.8-27b-gsq` | 240K | Both, Q4 KV; F16 MTP draft cache | medium / on |
 | AGENT SOLO / `qwen3.8-27b-gsq-solo` | 128K | 5060 Ti, Q5 KV | medium / off |
 | SECURITY / `qwen3.8-27b-orca` | 144K | Both, Q5 KV; F16 MTP draft cache | medium / on |
+| THINKCAP / `thinkingcap-qwen3.8-27b` | 112K | Both, Q5 KV; F16 MTP draft cache; vision | medium / on |
 
 Start with CODE FAST for routine agent work, CODE DEEP for harder coding,
 and CHAT for general conversation. These role assignments are recommendations,
 not measured quality rankings. SECURITY uses OrcaSAQ-2, a text-only compressed
 Qwen3.8 variant. Its model card reports quantization fidelity, not lower
-refusal behavior, security expertise, or accuracy.
+refusal behavior, security expertise, or accuracy. THINKCAP uses
+BottleCapAI’s ThinkingCap fine-tune in IQ4_XS, with its matching vision
+projector and embedded MTP head. The publisher reports 37% fewer reasoning
+tokens on average with slightly lower aggregate accuracy than its base model;
+that is a publisher evaluation, not a local benchmark. Its 112K Q5/MTP layout
+starts from the established SECURITY placement and remains uncalibrated locally.
 LONG prioritizes a large context with IQ3 weights, Q4 KV and embedded MTP,
 trading precision for space. Its 240K window leaves more working memory than
 the tested 256K MTP configuration. The previous Orca Q4 profile used 112K Q5

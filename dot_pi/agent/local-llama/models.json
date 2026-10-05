@@ -101,6 +101,13 @@
       "draftPath": "/mnt/shared/AI/models/llama.cpp/gemma4-31b-qat/mtp-gemma-4-31B-it.gguf",
       "policy": "gemma4",
       "source": { "repo": "unsloth/gemma-4-31B-it-qat-GGUF" }
+    },
+    "thinkingcap-qwen38": {
+      "path": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/ThinkingCap-Qwen3.8-27B-IQ4_XS.gguf",
+      "projector": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/mmproj-ThinkingCap-Qwen3.8-27B-f16.gguf",
+      "policy": "qwen38",
+      "embeddedMtp": true,
+      "source": { "repo": "bottlecapai/ThinkingCap-Qwen3.8-27B-GGUF" }
     }
   },
   "profiles": [
@@ -138,6 +145,11 @@
       "id": "qwen3.8-27b-orca", "name": "SECURITY · OrcaSAQ-2 27B · 144K + MTP", "model": "orcasaq-27b",
       "context": 147456, "maxOutput": 32768, "defaultThinking": "medium", "vision": false,
       "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "2,5", "flash-attn": "on", "cache-type-k": "q5_0", "cache-type-v": "q5_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3, "spec-draft-type-k": "f16", "spec-draft-type-v": "f16"}
+    },
+    {
+      "id": "thinkingcap-qwen3.8-27b", "name": "THINKCAP · ThinkingCap Qwen3.8 IQ4 · 112K + MTP · Vision", "model": "thinkingcap-qwen38",
+      "context": 114688, "maxOutput": 32768, "defaultThinking": "medium", "vision": true,
+      "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "2,5", "cache-type-k": "q5_0", "cache-type-v": "q5_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3, "spec-draft-type-k": "f16", "spec-draft-type-v": "f16", "mmproj-device": "CUDA1"}
     }
   ]
 }
