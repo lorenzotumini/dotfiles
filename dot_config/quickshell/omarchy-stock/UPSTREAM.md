@@ -9,6 +9,13 @@ The `shell`, `bin`, `config`, `default`, and `applications` trees are copied
 from that release. Executable files only carry chezmoi's `executable_` source
 prefix; their installed names and contents remain upstream-compatible.
 
+The shell has one recorded compatibility backport for Qt 6.12: QML files using
+Omarchy's palette qualify it as `Commons.Color`, matching upstream PR #14553
+(merged commit `b83d3df`). The patch is adapted to this pinned shell,
+recorded in `../omarchy-core/vendor-patches.txt`, and
+replayed during upstream staging. Other vendored contents retain their
+pinned upstream bytes.
+
 The complete set of 22 themes from the pinned release is included. Theme
 files, previews, backgrounds, and templates remain byte-for-byte upstream;
 mutable selections live outside this tree.
@@ -17,7 +24,7 @@ The runtime does not put this snapshot's complete `bin/` tree on `PATH`.
 `../omarchy-core` exposes a reviewed command allowlist and symlinks the shell,
 theme, and template boundaries into a smaller desktop-only profile.
 
-Local integration is deliberately outside the vendored trees: systemd user
+Apart from that compatibility patch, local integration lives outside the vendored trees: systemd user
 units select between this profile, the earlier curated profile, and the
 original Waybar desktop. The full Omarchy package is not installed because it
 also owns bootloader, display-manager, and system-wide distribution settings.

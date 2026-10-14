@@ -5,5 +5,7 @@ analytics-omarchy    https://github.com/Liran-shternberg/analytics-omarchy.git a
 # local patch: optional-plugin-patches/analytics-nvidia-gpu.patch
 # local patch: optional-plugin-patches/analytics-fixed-metric-widths.patch
 # local patch: optional-plugin-patches/analytics-metric-pairing.patch
+# local patch: optional-plugin-patches/analytics-qtquick-color.patch
 bjarneo.workspace-layout https://github.com/bjarneo/omarchy-workspace-layout.git c9238f0c96773b851f3f72bb10081f8d6481f74a
 # local patch: optional-plugin-patches/workspace-layout-ascii-plus.patch
+# local patch: optional-plugin-patches/workspace-layout-qtquick-color.patch

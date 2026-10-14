@@ -1,0 +1,10 @@
+[Unit]
+Description=Check desktop compatibility after runtime or QML changes
+After=desktop-core-shell.service
+
+[Service]
+Type=oneshot
+Environment=OMARCHY_PATH=%h/.config/quickshell/omarchy-core
+Environment=PATH=%h/.config/quickshell/omarchy-core/bin:%h/.local/bin:/usr/local/bin:/usr/bin
+ExecStart=%h/.local/bin/desktop-core-maintain monitor
+TimeoutStartSec=90

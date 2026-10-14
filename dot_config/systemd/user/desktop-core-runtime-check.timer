@@ -1,0 +1,11 @@
+[Unit]
+Description=Watch desktop runtime versions during the graphical session
+PartOf=graphical-session.target
+
+[Timer]
+OnActiveSec=2min
+OnUnitActiveSec=15min
+AccuracySec=1min
+
+[Install]
+WantedBy=graphical-session.target

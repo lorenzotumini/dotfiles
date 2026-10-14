@@ -1,0 +1,50 @@
+--- a/Widget.qml
++++ b/Widget.qml
+@@ -3,6 +3,7 @@
+ import Quickshell.Io
+ import qs.Commons
+ import qs.Ui
++import qs.Commons as Commons
+ 
+ BarWidget {
+   id: root
+@@ -26,9 +27,9 @@
+       var t = Math.min(1, Math.max(0, pct / 100))
+       return Qt.hsla(0.33 * (1 - t), 0.72, 0.52, 1.0)
+     }
+-    if (pct >= 85) return Color.urgent
+-    if (pct >= 60) return Color.accent
+-    return root.bar ? root.bar.barForeground : Color.foreground
++    if (pct >= 85) return Commons.Color.urgent
++    if (pct >= 60) return Commons.Color.accent
++    return root.bar ? root.bar.barForeground : Commons.Color.foreground
+   }
+ 
+   function openBtop() {
+@@ -153,7 +154,7 @@
+         Text {
+           id: cpuText
+           text: root.cpuUsage
+-          color: root.colored ? root.usageColor(root.cpuPercent) : (root.bar ? root.bar.barForeground : Color.foreground)
++          color: root.colored ? root.usageColor(root.cpuPercent) : (root.bar ? root.bar.barForeground : Commons.Color.foreground)
+           font.family: root.bar ? root.bar.fontFamily : Style.font.family
+           font.pixelSize: Style.font.caption
+           anchors.left: parent.left
+@@ -190,7 +191,7 @@
+         Text {
+           id: ramText
+           text: root.ramUsed
+-          color: root.colored ? root.usageColor(root.ramPercent) : (root.bar ? root.bar.barForeground : Color.foreground)
++          color: root.colored ? root.usageColor(root.ramPercent) : (root.bar ? root.bar.barForeground : Commons.Color.foreground)
+           font.family: root.bar ? root.bar.fontFamily : Style.font.family
+           font.pixelSize: Style.font.caption
+           anchors.left: parent.left
+@@ -228,7 +229,7 @@
+         Text {
+           id: gpuText
+           text: root.gpuUsage
+-          color: root.colored ? root.usageColor(root.gpuPercent) : (root.bar ? root.bar.barForeground : Color.foreground)
++          color: root.colored ? root.usageColor(root.gpuPercent) : (root.bar ? root.bar.barForeground : Commons.Color.foreground)
+           font.family: root.bar ? root.bar.fontFamily : Style.font.family
+           font.pixelSize: Style.font.caption
+           anchors.left: parent.left

@@ -16,7 +16,8 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-import urllib.request
+
+from monitoring import health, monitor, review, runtime_versions, upstream_report, report_text
 
 
 def run(*args, cwd=None):
@@ -90,6 +91,17 @@ class Context:
                 pins.append(dict(name=name, url=url, commit=commit, patches=[]))
         return pins
 
+    def vendor_patches(self):
+        return [self.core / name for name in command_names(self.core / "vendor-patches.txt")]
+
+
+def color_import_collision(text):
+    """Qt 6.12's QtQuick.Color shadows the pinned shell's bare Color references."""
+    if not re.search(r"(?<![\w.])Color\.", text):
+        return False
+    match = re.search(r"^import QtQuick(?:[ \t]+(\d+)\.(\d+))?[ \t]*(?://[^\n]*)?$", text, re.M)
+    return bool(match and (match[1] is None or (int(match[1]), int(match[2])) >= (6, 12)))
+
 
 def layout_entries(config):
     if not isinstance(config, dict) or type(config.get("version")) is not int or config["version"] != 1:
@@ -150,6 +162,8 @@ def check(ctx, vendor=None, plugin_override=None):
                 errors.append(f"{path}: {error}")
         for path in root.rglob("*.qml"):
             text = path.read_text()
+            if color_import_collision(text):
+                errors.append(f"QtQuick.Color shadows Omarchy Color in {path}; pin import QtQuick 6.11 or qualify the palette")
             for relative, module in re.findall(r'^import\s+(?:"([^"\n]+)"|(qs\.[\w.]+))', text, re.M):
                 if module:
                     target = vendor / "shell" / module[3:].replace(".", "/")
@@ -250,39 +264,42 @@ def patch_status(ctx, pin):
         "matches recorded patches" if not changes else "unrecorded differences: " + ", ".join(changes))
 
 
-def latest_release():
-    request = urllib.request.Request("https://api.github.com/repos/omacom/omarchy/releases/latest",
-                                     headers={"User-Agent": "desktop-core-maintenance", "Accept": "application/vnd.github+json"})
-    with urllib.request.urlopen(request, timeout=20) as response:
-        return json.load(response)
-
-
 def status(ctx, online):
     pin = read_json(ctx.core / "upstream.json")
     print(f"Desktop: {pin['version']}-local ({pin['commit'][:12]})")
-    for package in ("hyprland", "quickshell", "uwsm"):
-        try:
-            print(run("pacman", "-Q", package))
-        except (OSError, ValueError) as error:
-            print(f"{package}: unavailable ({error})")
+    try:
+        packages = runtime_versions()
+        for package, version in packages.items():
+            print(f"{package} {version}")
+        validated = ctx.state / "runtime-validated.json"
+        if validated.exists():
+            record = read_json(validated)
+            print(f"Last runtime validation: {record['checked_at']} ({record['scope']})")
+            print("Runtime packages: " + ("match validation" if record['snapshot']['packages'] == packages else "CHANGED since validation; run desktop-core-maintain health --record"))
+        else:
+            print("Runtime validation: not recorded; run desktop-core-maintain health --record")
+    except (OSError, ValueError) as error:
+        print(f"Runtime versions: unavailable ({error})")
     ledger = ctx.state / "layout-migrations.json"
     version = read_json(ledger).get("version", 0) if ledger.exists() else 0
     target = max(item["version"] for item in read_json(ctx.core / "layout-migrations.json"))
     print(f"Layout migrations: {version}/{target}")
+    online_report = None
     if online:
         try:
-            release = latest_release()
-            print(f"Latest release: {release['tag_name']} ({release['published_at']}) {release['html_url']}")
-        except (OSError, ValueError) as error:
-            print(f"Latest release: unavailable ({error})")
+            online_report = upstream_report(ctx)
+            print(report_text(online_report), end="")
+        except (OSError, ValueError, KeyError) as error:
+            print(f"Upstream checks: unavailable ({error})")
     else:
         print("Upstream release/remote plugin tips: not queried (use --online)")
     for plugin in ctx.pins():
         try:
             print(f"{plugin['name']}: {patch_status(ctx, plugin)}")
-            if online:
-                tip = run("git", "ls-remote", plugin["url"], "HEAD").split()[0]
-                print(f"  Remote default branch: {tip[:12]}" + (" (matches pin)" if tip == plugin["commit"] else " (differs from pin)"))
+            if online_report:
+                tip = online_report["plugins"][plugin["name"]]["tip"]
+                if tip:
+                    print(f"  Remote default branch: {tip[:12]}" + (" (matches pin)" if tip == plugin["commit"] else " (differs from pin)"))
         except (OSError, ValueError, subprocess.SubprocessError) as error:
             print(f"{plugin['name']}: check unavailable ({error})")
 
@@ -474,6 +491,7 @@ def stage(ctx, ref, output, plugin=None):
         for name in ("version", "logo.svg", "logo.txt", "icon.png", "icon.txt"):
             shutil.copyfile(checkout / name, candidate / name)
         shutil.copyfile(checkout / "LICENSE", candidate / "LICENSE.omarchy")
+        apply_patches(candidate, ctx.vendor_patches())
         copy_vendor(ctx.vendor, old, decode=bool(ctx.source))
         version = ref.removeprefix("v") if re.fullmatch(r"v?\d+\.\d+\.\d+(?:[.-][\w.-]+)?", ref) else f"snapshot-{commit[:12]}"
         pin.update(version=version, commit=commit)
@@ -505,6 +523,12 @@ def main():
     status_parser = sub.add_parser("status", help="read local pins, package versions and plugin patch drift")
     status_parser.add_argument("--online", action="store_true", help="also query GitHub latest release and plugin remote tips")
     sub.add_parser("check", help="static preflight, without loading plugins or contacting the network")
+    health_parser = sub.add_parser("health", help="static checks and isolated Qt palette/widget smoke test")
+    health_parser.add_argument("--record", action="store_true", help="record successful deployed runtime validation")
+    health_parser.add_argument("--offline", action="store_true", help="skip live shell IPC and journal checks")
+    sub.add_parser("monitor", help="check changed runtime versions/QML; notify on results, never deploy")
+    review_parser = sub.add_parser("review", help="save upstream release, desktop commits and plugin review report")
+    review_parser.add_argument("--notify", action="store_true", help="notify once per changed upstream observation")
     migrate_parser = sub.add_parser("migrate", help="apply pending local layout migrations with backups")
     migrate_parser.add_argument("--dry-run", action="store_true")
     for command in ("stage", "stage-plugin"):
@@ -522,6 +546,12 @@ def main():
         status(ctx, args.online)
     elif args.command == "check":
         return 0 if check(ctx) else 1
+    elif args.command == "health":
+        return 0 if health(ctx, check, record=args.record, live=not args.offline) else 1
+    elif args.command == "monitor":
+        return 0 if monitor(ctx, check) else 1
+    elif args.command == "review":
+        return 0 if review(ctx, notifications=args.notify) else 1
     elif args.command == "migrate":
         migrate(ctx, args.dry_run)
     else:

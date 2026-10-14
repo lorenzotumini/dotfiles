@@ -1,0 +1,4 @@
+# Reviewed patches applied to the pinned stock tree and replayed during staging.
+# Backport of https://github.com/omacom/omarchy/pull/14553 (merged b83d3df).
+# Explicit Commons.Color references, adapted to the pinned 4.0.1 shell.
+vendor-patches/qtquick-color.patch

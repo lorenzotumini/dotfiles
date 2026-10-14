@@ -5,11 +5,13 @@ import io
 import json
 from pathlib import Path
 import tempfile
+import sys
 import types
 import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "dot_config/quickshell/omarchy-core"))
 SPEC = importlib.util.spec_from_file_location("maintenance", ROOT / "dot_config/quickshell/omarchy-core/maintenance.py")
 maintenance = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(maintenance)
@@ -103,6 +105,30 @@ class MaintenanceTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 maintenance.stage(maintenance.Context(ROOT), "v4.0.4", self.root)
             fetch.assert_not_called()
+
+    def test_qtquick_color_collision_detection(self):
+        consumer = '\nimport qs.Commons\nItem { property color foreground: Color.bar.text }\n'
+        for qt_import in ('import QtQuick', 'import QtQuick 6.12', 'import QtQuick 6.13 // newer'):
+            self.assertTrue(maintenance.color_import_collision(qt_import + consumer))
+        for qt_import in ('import QtQuick 6.11', 'import QtQuick 2.15', 'import QtQuick as Quick'):
+            self.assertFalse(maintenance.color_import_collision(qt_import + consumer))
+        self.assertFalse(maintenance.color_import_collision('import QtQuick' + consumer.replace('Color.', 'Theme.Color.')))
+
+    def test_vendor_patch_replays_on_pristine_shell(self):
+        ctx = maintenance.Context(ROOT)
+        # Compare the recorded diff to the pinned pre-patch sources, without
+        # editing the source tree or needing an upstream network checkout.
+        candidate = self.root / 'vendor'
+        candidate.mkdir()
+        maintenance.copy_vendor(ctx.vendor / 'shell', candidate / 'shell', decode=True)
+        expected = maintenance.inventory(candidate)
+        for delta in reversed(ctx.vendor_patches()):
+            maintenance.run('git', 'apply', '--reverse', str(delta), cwd=candidate)
+        background = candidate / 'shell/plugins/background/Background.qml'
+        self.assertTrue(maintenance.color_import_collision(background.read_text()))
+        maintenance.apply_patches(candidate, ctx.vendor_patches())
+        self.assertEqual(expected, maintenance.inventory(candidate))
+        self.assertFalse(maintenance.color_import_collision(background.read_text()))
 
     def test_patch_replay_detects_conflicts_and_preserves_installed_files(self):
         repo = self.root / "plugin"

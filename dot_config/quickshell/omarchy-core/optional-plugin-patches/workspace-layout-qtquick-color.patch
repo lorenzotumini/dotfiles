@@ -1,0 +1,90 @@
+--- a/LayoutCanvas.qml
++++ b/LayoutCanvas.qml
+@@ -1,6 +1,7 @@
+ import QtQuick
+ import qs.Commons
+ import "Model.js" as Model
++import qs.Commons as Commons
+ 
+ // The layout, drawn at the workspace's own aspect ratio, with the dividers
+ // between slots as draggable handles.
+@@ -15,8 +16,8 @@
+   property var layout: null
+   property int windowCount: 0
+   property bool editable: true
+-  property color foreground: Color.popups.text
+-  property color accent: Color.accent
++  property color foreground: Commons.Color.popups.text
++  property color accent: Commons.Color.accent
+   property real aspect: 16 / 9
+ 
+   // Dragging a divider mutates the layout continuously; `committed` fires once
+--- a/LayoutThumb.qml
++++ b/LayoutThumb.qml
+@@ -1,6 +1,7 @@
+ import QtQuick
+ import qs.Commons
+ import "Model.js" as Model
++import qs.Commons as Commons
+ 
+ // A layout at chip size: no labels, no handles, just the shape. Used in the
+ // layout library, on the workspace chips, and as the bar icon — so a glance at
+@@ -9,7 +10,7 @@
+   id: root
+ 
+   property var layout: null
+-  property color stroke: Color.popups.text
++  property color stroke: Commons.Color.popups.text
+   property real strength: 1.0
+   property bool filled: false
+ 
+--- a/Panel.qml
++++ b/Panel.qml
+@@ -5,6 +5,7 @@
+ import qs.Commons
+ import qs.Ui
+ import "Model.js" as Model
++import qs.Commons as Commons
+ 
+ Panel {
+   id: root
+@@ -442,8 +443,8 @@
+ 
+   // ------------------------------------------------------------------- view
+ 
+-  readonly property color fg: Color.popups.text
+-  readonly property color accent: Color.accent
++  readonly property color fg: Commons.Color.popups.text
++  readonly property color accent: Commons.Color.accent
+ 
+   KeyboardPanel {
+     id: panel
+@@ -827,7 +828,7 @@
+             PanelActionButton {
+               enabled: root.selectedLayout !== null && root.layouts.length > 1
+               foreground: root.fg
+-              hoverColor: Color.urgent
++              hoverColor: Commons.Color.urgent
+               iconText: root.armedDelete === ("layout:" + root.selectedLayoutId) ? "!" : "󰩹"
+               tooltipText: root.armedDelete === ("layout:" + root.selectedLayoutId)
+                 ? "Click again to delete " + (root.selectedLayout ? root.selectedLayout.name : "")
+@@ -990,7 +991,7 @@
+             PanelActionButton {
+               enabled: root.config && root.config.profiles.length > 1
+               foreground: root.fg
+-              hoverColor: Color.urgent
++              hoverColor: Commons.Color.urgent
+               iconText: root.armedDelete === ("profile:" + root.activeProfileName) ? "!" : "󰩹"
+               tooltipText: root.armedDelete === ("profile:" + root.activeProfileName)
+                 ? "Click again to delete " + root.activeProfileName
+@@ -1050,8 +1051,8 @@
+           Button {
+             id: restoreButton
+             anchors.right: parent.right
+-            foreground: root.armedRestore ? Color.urgent : Util.alpha(root.fg, 0.55)
+-            accent: root.armedRestore ? Color.urgent : root.accent
++            foreground: root.armedRestore ? Commons.Color.urgent : Util.alpha(root.fg, 0.55)
++            accent: root.armedRestore ? Commons.Color.urgent : root.accent
+             bordered: root.armedRestore
+             fontSize: Style.font.caption
+             verticalPadding: Style.spacing.xs

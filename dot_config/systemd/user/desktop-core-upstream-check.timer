@@ -1,0 +1,11 @@
+[Unit]
+Description=Check upstream desktop changes weekly
+PartOf=graphical-session.target
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=graphical-session.target

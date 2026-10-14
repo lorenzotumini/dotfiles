@@ -1,7 +1,26 @@
 # Omarchy desktop core
 
-This directory is the local integration boundary around the pinned, unmodified
-Omarchy snapshot in `../omarchy-stock`.
+This directory is the local integration boundary around the pinned
+Omarchy snapshot in `../omarchy-stock`. Narrow compatibility changes are
+recorded in `vendor-patches.txt`; staging replays them on a fresh candidate
+and stops if they conflict.
+
+### Qt 6.12 palette compatibility
+
+Qt 6.12 introduced `QtQuick.Color`, which shadows the shell's
+`qs.Commons.Color` singleton. The affected QML files now import
+`qs.Commons as Commons` and refer explicitly to `Commons.Color`, matching
+upstream PR #14553 (merged as `b83d3df` on October 8, 2026). The import-version
+workaround has been replaced by this adapted backport to the pinned 4.0.1 shell.
+`vendor-patches/qtquick-color.patch` records the stock changes, and the optional
+Analytics and Workspace Layout widgets have matching recorded patches.
+The preflight rejects bare `Color.*` references with an unversioned or
+6.12+ QtQuick import, so a future refresh cannot silently reintroduce the bug.
+
+Upstream fix: <https://github.com/omacom/omarchy/pull/14553>.
+When adopting a snapshot that includes this fix, remove these patches from
+the replay lists before staging it. Retain the preflight rule to catch plugins
+that still use bare palette references.
 
 ## Maintenance and updates
 
@@ -13,14 +32,23 @@ Hyprland and Quickshell) still use the machine's normal Arch package workflow.
 
 ```sh
 omarchy-status                         # local versions, pins, patch drift
-omarchy-status --online                # also query latest release/plugin tips
+omarchy-status --online                # release, desktop branch changes, plugin tips
 desktop-core-maintain check            # offline static preflight
+desktop-core-maintain health           # real Qt palette/widget probe + live IPC/journal
+desktop-core-maintain health --record  # save successful runtime validation
+desktop-core-maintain review           # save an upstream review report
 desktop-core-maintain migrate --dry-run
 desktop-core-maintain stage v4.0.4      # prepare an upstream review directory
 desktop-core-maintain stage-plugin analytics-omarchy <commit>
 ```
 
-Online checks do not fetch into installed repositories. Patch verification
+Online checks do not fetch into installed repositories. `maintenance-policy.json`
+selects the upstream branch and desktop paths to observe. Reports include the
+five most recent commits per path and compare each path's tip with the pinned
+snapshot; they are review candidates, not a complete history or proof of
+compatibility. The `bin` path includes distribution helpers, which still need
+filtering through the local command allowlist when reviewing changes.
+Patch verification
 reconstructs each installed plugin's HEAD in a temporary directory, replays
 the recorded patches in order, and compares the result with the installed
 files. It distinguishes expected patches from additional local edits. An
@@ -57,13 +85,52 @@ Run `omarchy-status`
 afterward to verify the installed commit and patched content match the record.
 
 `check` validates allowlisted commands, plugin entry-point files, configured
-widget IDs, local QML imports, the properties used by the tray wrapper, and
+widget IDs, local QML imports, palette import compatibility, the properties used by the tray wrapper, and
 recorded patches against installed plugin commits. Patch conflicts fail;
 unrecorded local changes or commit drift produce warnings for review.
-`desktop-shell restart` runs it before stopping the working shell. These are
-static checks: they do not validate Qt APIs, run third-party code, or prove
+`desktop-shell restart` runs `health --offline` before stopping the working
+shell. The static checks do not validate Qt APIs, run third-party code, or prove
 that authentication, IPC, and visual behavior work. Test those in the actual
 session after an approved refresh.
+
+### Ongoing maintenance policy
+
+Keep a tested desktop snapshot and refresh it roughly monthly when relevant
+releases are available. Use recorded backports for necessary runtime fixes
+between releases, then remove them when the chosen snapshot includes them.
+Preserve local adapters and interactive settings during each staged review.
+After applying a scoped refresh, test the bar, a panel, both selectors,
+theme/wallpaper changes, notifications and lock/unlock; retain the previous
+source revision and machine-state backups for rollback.
+
+Two graphical-session user timers are enabled by the after-apply hook:
+
+- `desktop-core-runtime-check.timer` checks every 15 minutes. When Qt,
+  Quickshell, Hyprland, uwsm, QML or health tooling changes, it runs static
+  checks, an isolated software-rendered Quickshell probe against the real
+  palette/UI kit, and live shell/picker IPC plus a palette/load journal check
+  if the shell is running. It waits for active pacman transactions to finish.
+  A successful result records `~/.local/state/desktop-core/runtime-validated.json`.
+  Results notify once per changed runtime/result; failed checks are retried.
+- `desktop-core-upstream-check.timer` saves a weekly release, desktop-branch
+  and optional-plugin report, and notifies once per changed observation.
+  The readable report is `~/.local/state/desktop-core/upstream-report.txt`.
+  Network failures remain visible in the report/service logs and never
+  acknowledge an incomplete observation.
+
+The timers observe and test; they never install packages, modify repositories,
+adopt snapshots, or restart the running shell. The runtime probe loads only
+the palette and UI kit in a temporary directory, changes colors in that
+isolated process, and checks actual widget bindings. It does not exercise
+Hyprland behavior, third-party plugin execution, authentication, or all panels.
+The validation record describes that limited scope; retain running-session
+checks for a full refresh. Neither timer modifies theme selections or layout.
+
+For a machine applied without a user session bus, enable the timers after
+login with `systemctl --user enable --now desktop-core-runtime-check.timer
+desktop-core-upstream-check.timer`. Inspect scheduled checks with
+`systemctl --user list-timers 'desktop-core-*'` and failed checks with
+`journalctl --user -u desktop-core-runtime-check.service`.
 
 For development before deploying the tooling:
 
@@ -90,8 +157,9 @@ changes are therefore not continually reset. Backups for actual layout edits
 are written to `~/.local/state/desktop-core/layout-backups/`. Restore a matching
 layout backup and migration ledger version together when rolling back.
 
-The local after-apply hook runs pending migrations, checks the desktop, and
-rebuilds the command symlinks using `desktop-core-init --commands-only`.
+The local after-apply hook runs pending migrations, checks the desktop,
+rebuilds the command symlinks using `desktop-core-init --commands-only`, and
+enables the maintenance timers when a user session bus is available.
 It does not restart the shell or resynchronize themes. Migrations use a local
 lock and check for concurrent edits before replacing the layout; avoid editing
 bar settings during an apply. If the shell's schema changes upstream, extend

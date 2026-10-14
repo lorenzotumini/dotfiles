@@ -1,0 +1,9 @@
+[Unit]
+Description=Review upstream desktop releases, fixes and plugin revisions
+
+[Service]
+Type=oneshot
+Environment=OMARCHY_PATH=%h/.config/quickshell/omarchy-core
+Environment=PATH=%h/.config/quickshell/omarchy-core/bin:%h/.local/bin:/usr/local/bin:/usr/bin
+ExecStart=%h/.local/bin/desktop-core-maintain review --notify
+TimeoutStartSec=120
