@@ -5,12 +5,19 @@
 import fs from 'node:fs'
 import http from 'node:http'
 import os from 'node:os'
-import path from 'node:path'
 
-const configDir = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config')
-const serverJsonPath = process.env.APPDATA
-	? path.join(process.env.APPDATA, 'tldraw', 'server.json')
-	: path.join(configDir, 'tldraw', 'server.json')
+const serverJsonPath = expandLeadingEnvVar("/home/lorenzo/.config/tldraw/server.json")
+
+// The embedded path can be one of the env-var defaults ($HOME/…, $APPDATA/…)
+// rather than a concrete path, and node does no shell expansion — without this
+// the read looks for a literal directory named "$HOME".
+function expandLeadingEnvVar(p) {
+	const slash = p.indexOf('/')
+	if (!p.startsWith('$') || slash === -1) return p
+	const name = p.slice(1, slash)
+	const value = process.env[name] ?? (name === 'HOME' ? os.homedir() : null)
+	return value === null ? p : value + p.slice(slash)
+}
 
 function readServerJson() {
 	try {

@@ -1,9 +1,8 @@
 ---
 name: tldraw-offline
-disable-model-invocation: true
 description: Operate the user's tldraw offline canvas app, including open .tldraw or .tldr files. Use whenever a task involves inspecting, editing, arranging, connecting, linting, or scripting a tldraw Desktop canvas.
+disable-model-invocation: true
 ---
-<!-- installed-by:tldraw-desktop-agent-skills -->
 
 # tldraw canvas operator
 
@@ -11,7 +10,7 @@ Use this skill for tasks involving open tldraw Desktop files. The desktop app ex
 
 ## Server
 
-The default server is `http://localhost:7236`. If that port is not active, read `port` from the app's `server.json`: `%APPDATA%/tldraw/server.json` on Windows, or `${XDG_CONFIG_HOME:-$HOME/.config}/tldraw/server.json` on Linux. The `tq` helper resolves the platform-specific path automatically.
+The default server is `http://localhost:7236`. If that port is not active, read the `port` from `/home/lorenzo/.config/tldraw/server.json`.
 
 A clean quit removes `server.json`; the next launch rewrites it. It also records `pid` and `startedAt`, so if the file is present but requests to its `port` fail, treat it as stale (the app quit uncleanly) — the app is not running.
 
@@ -22,24 +21,23 @@ Every request except `GET /` and `/readme` needs the per-launch `token` from tha
 **Each Bash tool call runs in a fresh shell — exported env vars do NOT persist between calls.** A `TLDRAW_TOKEN` you `export` in one call is empty in the next, so the request sends `authorization: Bearer` with no token and 401s. "Export once and reuse" does not work here — re-establish the port and token on every call. Read them together at the top of each call (both stay fixed for the app's lifetime, so re-reading is cheap):
 
 ```bash
-SERVER_JSON="${XDG_CONFIG_HOME:-$HOME/.config}/tldraw/server.json"
-PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' "$SERVER_JSON"); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' "$SERVER_JSON")
+PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' '/home/lorenzo/.config/tldraw/server.json'); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' '/home/lorenzo/.config/tldraw/server.json')
 # use as:  http://localhost:$PORT/...   -H "authorization: Bearer $TOKEN"
 ```
 
 ### Helper: `tq`
 
-A ready-made helper ships with this skill at `"$HOME/.pi/agent/skills/tldraw-offline/tq.mjs"`. Invoke it as `node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]` — it re-reads the port and token from `server.json` itself on every call, so you never handle the token or the fresh-shell env problem. A body starting with `{` is sent as JSON; anything else as raw `text/plain`:
+A ready-made helper ships with this skill at `"$HOME/.pi/agent/skills/manual/tldraw-offline/tq.mjs"`. Invoke it as `node "$HOME/.pi/agent/skills/manual/tldraw-offline/tq.mjs" <METHOD> <path> [body]` — it re-reads the port and token from `server.json` itself on every call, so you never handle the token or the fresh-shell env problem. A body starting with `{` is sent as JSON; anything else as raw `text/plain`:
 
 ```bash
-node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" POST /api/search '{"code":"return await api.getDocs()"}'
-node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" POST /api/doc/DOC_ID/exec 'return editor.getCurrentPageShapes().length'
-node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" GET  /api/doc/DOC_ID/script-status
+node "$HOME/.pi/agent/skills/manual/tldraw-offline/tq.mjs" POST /api/search '{"code":"return await api.getDocs()"}'
+node "$HOME/.pi/agent/skills/manual/tldraw-offline/tq.mjs" POST /api/doc/DOC_ID/exec 'return editor.getCurrentPageShapes().length'
+node "$HOME/.pi/agent/skills/manual/tldraw-offline/tq.mjs" GET  /api/doc/DOC_ID/script-status
 ```
 
 Prefer it on Windows and in any non-POSIX shell: it uses no shell substitution or pipelines, so the same line runs unchanged in bash, zsh, Git Bash, and PowerShell, whereas the `PORT=$(...)` blocks below assume a POSIX shell.
 
-If `tq` is missing (an older install), fall back to raw `curl` with the `PORT`/`TOKEN` reads shown above. The raw-`curl` examples below stay in explicit form so each request is visible; translate any to `node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]`.
+If `tq` is missing (an older install), fall back to raw `curl` with the `PORT`/`TOKEN` reads shown above. The raw-`curl` examples below stay in explicit form so each request is visible; translate any to `node "$HOME/.pi/agent/skills/manual/tldraw-offline/tq.mjs" <METHOD> <path> [body]`.
 
 ```bash
 curl -s http://localhost:7236/readme
@@ -59,12 +57,11 @@ The code-taking POST endpoints accept raw JavaScript as the request body (`conte
 
 ## Use this first
 
-Most tasks do not require searching `api.members`. Start with these calls and search the full Editor API only if a snippet fails or you truly need an unknown method. The object is `api`, not `spec`. Each block below is shown as raw `curl` so the request is visible; `node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]` is the shorter equivalent that handles the port and token for you.
+Most tasks do not require searching `api.members`. Start with these calls and search the full Editor API only if a snippet fails or you truly need an unknown method. The object is `api`, not `spec`. Each block below is shown as raw `curl` so the request is visible; `node "$HOME/.pi/agent/skills/manual/tldraw-offline/tq.mjs" <METHOD> <path> [body]` is the shorter equivalent that handles the port and token for you.
 
 ```bash
 # Fresh shell per call: re-read port + token first (or use the values already in your context).
-SERVER_JSON="${XDG_CONFIG_HOME:-$HOME/.config}/tldraw/server.json"
-PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' "$SERVER_JSON"); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' "$SERVER_JSON")
+PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' '/home/lorenzo/.config/tldraw/server.json'); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' '/home/lorenzo/.config/tldraw/server.json')
 
 # Pick the target doc by focused window or filename.
 curl -s -X POST http://localhost:$PORT/api/search \
@@ -163,6 +160,8 @@ Arrange existing shapes with `editor.alignShapes(ids, 'top')`, `editor.stackShap
 
 A card and the words on it are one shape: the words go in the geo's `richText` label, as above; a long label wants a bigger card (`verticalAlign: 'start'`), not a separate `text` shape. `text` shapes are for words that stand on their own, like a heading over a group of cards.
 
+A text box sits fully inside a panel or frame or fully outside it, never across its border, and nothing inside a frame extends past the frame's edge; `helpers.getLints()` reports both as `text-crosses-container` and `shape-outside-frame`. A shape parented to a frame or group takes `x`/`y` relative to that parent, not the page: a card for a column frame at page x 360 gets local x 20, not 380. `editor.reparentShapes(ids, frameId)` keeps page positions when moving existing shapes in.
+
 ### Freehand draw shapes
 
 A `draw` shape's `props.segments` hold delta-encoded base64 `path` strings, not point arrays — a segment like `{ type: 'free', points: [...] }` fails validation and crashes `createShape`. Never build `path` strings by hand: compute your points as `{ x, y, z }` objects (`z` is pressure; use `0.5`) and convert them with `compressLegacySegments` from `'tldraw'`. Coordinates are relative to the shape's own `x`/`y`:
@@ -213,7 +212,7 @@ Comment threads are how people and agents talk about the canvas in context — e
 2. Choose durability:
    - Static drawing edits such as moving, arranging, labeling, or styling shapes use `/exec`.
    - Durable behavior on a locally owned document such as clickable UI, animations, reactive layouts, or "run on open" logic uses `/script-workspace` and direct filesystem edits under `script/**`. Read the worked recipes from `api.recipes` (via `/api/search`) before building durable behavior. Remote boards have no local script workspace; an offline-server board's script is written on the server (the `script-a-board-on-an-offline-server` recipe).
-3. Verify once with records from `api.getShapes()`, `api.getBindings()`, `api.getScriptStatus()`, or a screenshot when visual placement is uncertain. After a resize or move, compare `helpers.getLints()` from before and after your edit: fix only lints your edit introduced, on the shape you edited, never by moving a neighbour you were not asked to touch. Save only a locally owned document with `helpers.saveDoc()`; remote edits sync to the host working copy.
+3. Verify once with records from `api.getShapes()`, `api.getBindings()`, `api.getScriptStatus()`, or a screenshot when visual placement is uncertain. After a resize or move, compare `helpers.getLints()` from before and after your edit: fix only lints your edit introduced, on the shape you edited, never by moving a neighbour you were not asked to touch. Save only a locally owned document that has a `filePath` with `helpers.saveDoc()`; remote edits sync to the host working copy.
 4. Stop after one successful verification unless the user explicitly asks for debugging.
 
 Never edit `.tldraw` archive files directly while they are open, and never edit `db.sqlite`, `db.sqlite-wal`, `db.sqlite-shm`, `metadata.json`, `.lock`, or `.script-workspace/**`.
@@ -237,6 +236,7 @@ Use this when a board script draws a board that users should rearrange or restyl
 - Use `helpers.onShapeTranslate(anchorId, ({ dx, dy }) => ... , { signal })` to respond only to that anchor.
 - Move script-owned internals with `helpers.translateShapes(..., dx, dy)` — the handler's dx/dy and the delta it consumes are both page-space, so pass them straight through even when shapes sit in frames or groups. It runs without recording undo history; wrap other script-owned writes in `editor.run(fn, { history: 'ignore' })`.
 - Render per-frame or purely visual writes through `helpers.renderEphemeral(fn)`: they paint without dirtying the document, landing in a save, syncing to LAN participants, or entering undo. `history: 'ignore'` alone still persists every frame, so an animation written that way can never be saved cleanly.
+- A shape id is bound to its type for the life of the editor: deleting a shape and creating a different type under the same id (in one batch or one `renderEphemeral` frame) leaves an "Error" badge in its place. Give a slot that changes type a new id. `helpers.getLints()` reports a shape showing that badge as `shape-render-error`, for shapes on the current page.
 - Avoid broad `store.listen` / `afterChange` layout handlers that react to every shape; they can treat the script's own writes as new user edits and recurse.
 
 ## Editor customization: custom shapes, tools, and overlays (`config.js`)
@@ -247,12 +247,11 @@ Read the worked `custom-shape-config-js`, `custom-binding-config-js`, and `custo
 
 ## Fast path for static edits
 
-Shown as raw `curl`; `node "$HOME/.pi/agent/skills/tldraw-offline/tq.mjs" <METHOD> <path> [body]` is the shorter equivalent that handles the port and token for you.
+Shown as raw `curl`; `node "$HOME/.pi/agent/skills/manual/tldraw-offline/tq.mjs" <METHOD> <path> [body]` is the shorter equivalent that handles the port and token for you.
 
 ```bash
 # Fresh shell per call: re-read port + token (or use the values already in your context).
-SERVER_JSON="${XDG_CONFIG_HOME:-$HOME/.config}/tldraw/server.json"
-PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' "$SERVER_JSON"); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' "$SERVER_JSON")
+PORT=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).port' '/home/lorenzo/.config/tldraw/server.json'); TOKEN=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).token' '/home/lorenzo/.config/tldraw/server.json')
 
 # Discover docs.
 curl -s -X POST http://localhost:$PORT/api/search \
@@ -266,7 +265,7 @@ curl -s -X POST http://localhost:$PORT/api/search \
   -H "authorization: Bearer $TOKEN" \
   -d '{"code":"const [doc] = await api.getDocs(); return await api.getShapes(doc.id)"}'
 
-# Mutate a LOCAL doc and save with /exec, then verify once with api.getShapes().
+# Mutate a LOCAL doc (one with a filePath) and save with /exec, then verify once with api.getShapes().
 # For a remote doc, omit helpers.saveDoc(); its host owns archive saving.
 curl -s -X POST http://localhost:$PORT/api/doc/DOC_ID/exec \
   -H 'content-type: application/json' \
