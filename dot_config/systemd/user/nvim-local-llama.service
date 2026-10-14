@@ -1,0 +1,12 @@
+[Unit]
+Description=Offline Neovim FIM completions (llama.cpp)
+
+[Service]
+Type=simple
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin
+EnvironmentFile=-%h/.config/nvim/local-llama.env
+ExecStart=%h/.local/bin/nvim-local-llama
+TimeoutStopSec=30
+KillMode=control-group
+
+# Started on demand by Neovim; never enabled at login.

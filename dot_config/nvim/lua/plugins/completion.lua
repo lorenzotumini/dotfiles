@@ -11,6 +11,10 @@ return {
 			["<Tab>"] = {
 				"accept",
 				function()
+					if vim.g.copilot_mode == "local" and package.loaded["local_completion"] then
+						return require("local_completion").accept("full")
+					end
+
 					if vim.g.copilot_mode ~= "ghost" or not package.loaded["copilot.suggestion"] then
 						return
 					end

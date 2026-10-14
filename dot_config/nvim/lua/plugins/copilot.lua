@@ -1,6 +1,10 @@
-local DEFAULT_COPILOT_MODE = "off" -- "off", "blink", or "ghost"
-local COPILOT_MODES = { "off", "blink", "ghost" }
+local DEFAULT_COPILOT_MODE = "off" -- "off", "blink", "ghost", or "local"
+local COPILOT_MODES = { "off", "blink", "ghost", "local" }
 local COPILOT_MODE_FILE = vim.fn.stdpath("state") .. "/copilot-mode"
+
+local function cloud_enabled()
+	return vim.g.copilot_mode == "blink" or vim.g.copilot_mode == "ghost"
+end
 
 local function load_copilot_mode()
 	if vim.fn.filereadable(COPILOT_MODE_FILE) ~= 1 then
@@ -16,6 +20,7 @@ local function load_copilot_mode()
 end
 
 local function save_copilot_mode(mode)
+	vim.fn.mkdir(vim.fn.stdpath("state"), "p")
 	local ok, err = pcall(vim.fn.writefile, { mode }, COPILOT_MODE_FILE)
 	if not ok then
 		vim.notify("Could not save Copilot mode: " .. tostring(err), vim.log.levels.WARN)
@@ -44,7 +49,7 @@ local function detach_copilot_buffers()
 end
 
 local function toggle_copilot_panel()
-	if vim.g.copilot_mode == "off" then
+	if not cloud_enabled() then
 		vim.notify("Enable Copilot Blink or ghost mode before opening the panel")
 		return
 	end
@@ -66,7 +71,7 @@ local function toggle_copilot_panel()
 end
 
 local function accept_copilot_nes()
-	if vim.g.copilot_mode == "off" then
+	if not cloud_enabled() then
 		return
 	end
 
@@ -92,14 +97,20 @@ local function set_copilot_mode(mode, opts)
 	opts = opts or {}
 
 	if not vim.tbl_contains(COPILOT_MODES, mode) then
-		vim.notify("Invalid Copilot mode: " .. mode, vim.log.levels.ERROR)
+		vim.notify("Invalid completion mode: " .. mode, vim.log.levels.ERROR)
 		return
+	end
+	if mode == "local" and not require("local_completion").available() then
+		return
+	end
+	if package.loaded["local_completion"] then
+		require("local_completion").disable()
 	end
 
 	vim.g.copilot_mode = mode
 	apply_copilot_mode_to_buffer()
 
-	if mode ~= "off" then
+	if cloud_enabled() then
 		require("lazy").load({
 			plugins = {
 				"copilot.lua",
@@ -114,6 +125,15 @@ local function set_copilot_mode(mode, opts)
 		require("copilot.client").buf_attach(false, 0)
 	else
 		detach_copilot_buffers()
+		dismiss_copilot_nes()
+		if package.loaded["copilot.panel"] then
+			require("copilot.panel").close()
+		end
+		if mode == "local" then
+			require("local_completion").enable(function()
+				set_copilot_mode("off")
+			end)
+		end
 	end
 
 	local blink_ok, blink = pcall(require, "blink.cmp")
@@ -126,7 +146,7 @@ local function set_copilot_mode(mode, opts)
 	end
 
 	if opts.notify ~= false then
-		vim.notify("Copilot mode: " .. mode)
+		vim.notify("Completion mode: " .. mode)
 	end
 end
 
@@ -191,7 +211,7 @@ return {
 				},
 			},
 			should_attach = function(buf_id, _)
-				if vim.g.copilot_mode == "off" then
+				if not cloud_enabled() then
 					return false
 				end
 
@@ -212,15 +232,26 @@ return {
 				callback = apply_copilot_mode_to_buffer,
 			})
 
-			vim.api.nvim_create_user_command("CopilotMode", function(args)
+			local function mode_command(args)
 				set_copilot_mode(args.args)
-			end, {
+			end
+			local command_opts = {
 				nargs = 1,
 				complete = function()
 					return COPILOT_MODES
 				end,
-				desc = "Set Copilot mode (off, blink, or ghost)",
-			})
+				desc = "Set completion mode (off, blink, ghost, or local)",
+			}
+			vim.api.nvim_create_user_command("CopilotMode", mode_command, command_opts)
+			vim.api.nvim_create_user_command("CompletionMode", mode_command, command_opts)
+			vim.api.nvim_create_user_command("LocalLlamaStop", function()
+				if vim.g.copilot_mode == "local" then
+					set_copilot_mode("off")
+				end
+				if require("local_completion").available() then
+					require("local_completion").stop()
+				end
+			end, { desc = "Stop the local completion server and free its VRAM" })
 
 			if restored_mode ~= "off" then
 				vim.schedule(function()
@@ -230,30 +261,42 @@ return {
 		end,
 		keys = {
 			{
+				"<leader>yu",
+				"<cmd>LocalLlamaStop<CR>",
+				desc = "AI unload local model",
+			},
+			{
+				"<leader>yl",
+				function()
+					set_copilot_mode("local")
+				end,
+				desc = "AI local ghost",
+			},
+			{
 				"<leader>yb",
 				function()
 					set_copilot_mode("blink")
 				end,
-				desc = "Copilot Blink mode",
+				desc = "AI Copilot blink",
 			},
 			{
 				"<leader>yg",
 				function()
 					set_copilot_mode("ghost")
 				end,
-				desc = "Copilot ghost mode",
+				desc = "AI Copilot ghost",
 			},
 			{
 				"<leader>yo",
 				function()
 					set_copilot_mode("off")
 				end,
-				desc = "Copilot off",
+				desc = "AI off",
 			},
 			{
 				"<leader>yp",
 				toggle_copilot_panel,
-				desc = "Copilot suggestions panel",
+				desc = "AI Copilot suggestions panel",
 			},
 			{
 				"<M-n>",

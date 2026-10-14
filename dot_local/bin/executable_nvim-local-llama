@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Override these in ~/.config/nvim/local-llama.env (systemd EnvironmentFile).
+model="${NVIM_LLAMA_MODEL:-/mnt/shared/AI/models/llama.cpp/qwen2.5-coder-3b/qwen2.5-coder-3b-q8_0.gguf}"
+device="${NVIM_LLAMA_DEVICE:-CUDA0}"
+context="${NVIM_LLAMA_CONTEXT:-16384}"
+
+if [[ ! -r "$model" ]]; then
+    printf 'Completion model is not ready: %s\nFinish the Hugging Face download before starting this service.\n' "$model" >&2
+    exit 1
+fi
+
+exec llama-server \
+    --model "$model" --alias nvim-fim \
+    --host 127.0.0.1 --port 8012 \
+    --device "$device" --split-mode none --n-gpu-layers all \
+    --ctx-size "$context" --parallel 1 \
+    --flash-attn on --batch-size 1024 --ubatch-size 512 \
+    --cache-reuse 1024 --no-webui

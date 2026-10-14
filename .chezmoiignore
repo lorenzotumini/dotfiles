@@ -12,6 +12,7 @@ tests/**
 .config/omarchy/shell.toml
 .config/omarchy/themes/**
 .config/nvim/lazy-lock.json
+.config/nvim/local-llama.env
 .glzr/glazewm/errors.log
 .glzr/zebar/errors.log
 .luarc.json
@@ -23,6 +24,7 @@ __pycache__/
 .pi/agent/extensions/observational-memory/**
 .pi/agent/optional/observational-memory/**
 .local/bin/pi-lean
+.local/bin/nvim-local-llama
 .config/alacritty/**
 .config/autostart/**
 .config/btop/**

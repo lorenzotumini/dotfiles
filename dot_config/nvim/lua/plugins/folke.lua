@@ -55,6 +55,7 @@ return {
 			preset = "classic", -- "modern", "helix"
 			win = { border = BORDER },
 			sort = { "local", "order", "group", "alphanum", "mod" },
+			spec = { { "<leader>y", group = "AI completions" } },
 		},
 	},
 }
