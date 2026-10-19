@@ -21,6 +21,7 @@ return {
 				cpp = "cd $dir && g++ -std=c++23 $fileName -o $fileNameWithoutExt && $fileNameWithoutExt",
 				icon = "cd $dir && icont $fileName && $fileNameWithoutExt",
 				rust = "cd $dir && rustc $fileName && $fileNameWithoutExt",
+				java = "cd $dir && javac $fileName && java -ea $fileNameWithoutExt",
 			}
 
 			if env.is_windows and env.readable("C:/iverilog/bin/simulate.ps1") then
