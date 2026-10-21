@@ -1,0 +1,11 @@
+name,tag,selected,parsed,source_C_line_coverage,recovered,SLOC,verbosity_pct,erosion_pct,wall_seconds,peak_MiB
+redis-strict,7.0.0,155,126,42.6,0,35815,7.64,72.55,12.93,119.2
+redis-recover,7.0.0,155,152,100.0,26,79166,7.56,76.66,18.89,196.2
+lua-strict,v5.4.4,61,11,5.0,0,1306,0.46,62.64,2.57,51.0
+lua-recover,v5.4.4,61,38,99.3,27,14617,2.15,44.98,3.50,75.0
+zlib-strict,v1.2.12,23,0,0.0,0,0,,,2.42,49.5
+zlib-recover,v1.2.12,23,15,100.0,15,6174,12.88,79.83,2.00,58.2
+linux-math-strict,v5.18,11,9,58.1,0,397,4.28,33.85,1.44,47.6
+linux-math-recover,v5.18,11,11,100.0,2,783,3.70,33.10,1.17,48.3
+linux-locking-strict,v5.18,31,5,2.5,0,282,4.26,0.00,1.74,50.7
+linux-locking-recover,v5.18,31,29,100.0,24,9235,10.17,38.84,2.49,65.8

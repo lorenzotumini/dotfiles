@@ -1,0 +1,1062 @@
+[
+  {
+    "name": "redis-strict",
+    "tag": "7.0.0",
+    "remote": "https://github.com/redis/redis",
+    "revision": "d375595d5e3ae2e5c29e6c00a2dc3d60578fd9fc 2022-04-27",
+    "options": {
+      "include": [
+        "src/**/*.c",
+        "src/**/*.h"
+      ],
+      "exclude": [
+        "src/modules/**",
+        "src/commands.c"
+      ],
+      "recover": false
+    },
+    "adapterHashes": {
+      "analyze.py": "53f4b0ed351be81371d78d6c07aab3fe69badfcfeb0e95ff7d72145711031e43",
+      "c_parser.py": "e41beaef030a38ada299eaa22e0cef10118dfc1afc1153e5d5cc46d63993ecbf",
+      "discovery.py": "14e3e7d7ecc5029fa1a8afe667e5f3312743bba08b7d1a3a26dae21360067a5e"
+    },
+    "wallSeconds": 12.925,
+    "selected": 155,
+    "parsed": 126,
+    "failed": 29,
+    "recovered": 0,
+    "sloc": 35815,
+    "functions": 1785,
+    "verbosity": 0.07636465168225604,
+    "erosion": 0.7255190384283663,
+    "highComplexityFunctions": 214,
+    "cloneLines": 2735,
+    "totalMass": 65494.430176752045,
+    "analysisSeconds": 11.958545100002084,
+    "peakWorkingSetMiB": 119.24609375,
+    "selectedPhysicalLines": 142057,
+    "parsedPhysicalLines": 63084,
+    "parsedLineCoverage": 0.4440752655624151,
+    "pythonVersion": "3.14.0 (main, Nov 19 2025, 22:43:52) [MSC v.1944 64 bit (AMD64)]",
+    "reportPath": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\reports\\redis-strict.json",
+    "hotspots": [
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\rdb.c",
+        "line": 1725,
+        "endLine": 2679,
+        "name": "rdb.rdbLoadObject",
+        "complexity": 191,
+        "sloc": 660,
+        "mass": 4906.87884505008
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\sort.c",
+        "line": 189,
+        "endLine": 605,
+        "name": "sort.sortCommandGeneric",
+        "complexity": 100,
+        "sloc": 271,
+        "mass": 1646.2077633154329
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\geo.c",
+        "line": 515,
+        "endLine": 836,
+        "name": "geo.georadiusGeneric",
+        "complexity": 100,
+        "sloc": 224,
+        "mass": 1496.6629547095765
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\acl.c",
+        "line": 2576,
+        "endLine": 2937,
+        "name": "acl.aclCommand",
+        "complexity": 87,
+        "sloc": 277,
+        "mass": 1447.9685770071117
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\rdb.c",
+        "line": 2893,
+        "endLine": 3237,
+        "name": "rdb.rdbLoadRioWithLoadingCtx",
+        "complexity": 80,
+        "sloc": 231,
+        "mass": 1215.8947322856532
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\t_zset.c",
+        "line": 2528,
+        "endLine": 2810,
+        "name": "t_zset.zunionInterDiffGenericCommand",
+        "complexity": 67,
+        "sloc": 184,
+        "mass": 908.832217738786
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\rdb.c",
+        "line": 797,
+        "endLine": 1079,
+        "name": "rdb.rdbSaveObject",
+        "complexity": 62,
+        "sloc": 188,
+        "mass": 850.1011704497295
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\t_stream.c",
+        "line": 2164,
+        "endLine": 2442,
+        "name": "t_stream.xreadCommand",
+        "complexity": 60,
+        "sloc": 183,
+        "mass": 811.664955508121
+      }
+    ],
+    "sourceCoverage": {
+      ".c": {
+        "selectedFiles": 95,
+        "parsedFiles": 69,
+        "physicalLines": 128502,
+        "parsedPhysicalLines": 54782,
+        "lineCoverage": 0.4263124309349271,
+        "recoveredFiles": 0
+      },
+      ".h": {
+        "selectedFiles": 60,
+        "parsedFiles": 57,
+        "physicalLines": 13555,
+        "parsedPhysicalLines": 8302,
+        "lineCoverage": 0.6124677240870527,
+        "recoveredFiles": 0
+      }
+    },
+    "recoveredSyntaxErrorNodes": 0
+  },
+  {
+    "name": "redis-recover",
+    "tag": "7.0.0",
+    "remote": "https://github.com/redis/redis",
+    "revision": "d375595d5e3ae2e5c29e6c00a2dc3d60578fd9fc 2022-04-27",
+    "options": {
+      "include": [
+        "src/**/*.c",
+        "src/**/*.h"
+      ],
+      "exclude": [
+        "src/modules/**",
+        "src/commands.c"
+      ],
+      "recover": true
+    },
+    "adapterHashes": {
+      "analyze.py": "53f4b0ed351be81371d78d6c07aab3fe69badfcfeb0e95ff7d72145711031e43",
+      "c_parser.py": "e41beaef030a38ada299eaa22e0cef10118dfc1afc1153e5d5cc46d63993ecbf",
+      "discovery.py": "14e3e7d7ecc5029fa1a8afe667e5f3312743bba08b7d1a3a26dae21360067a5e"
+    },
+    "wallSeconds": 18.895,
+    "selected": 155,
+    "parsed": 152,
+    "failed": 3,
+    "recovered": 26,
+    "sloc": 79166,
+    "functions": 3783,
+    "verbosity": 0.07562590000757902,
+    "erosion": 0.7665851442775017,
+    "highComplexityFunctions": 494,
+    "cloneLines": 5987,
+    "totalMass": 167047.76090424097,
+    "analysisSeconds": 17.8223805000016,
+    "peakWorkingSetMiB": 196.171875,
+    "selectedPhysicalLines": 142057,
+    "parsedPhysicalLines": 136804,
+    "parsedLineCoverage": 0.96302188558114,
+    "pythonVersion": "3.14.0 (main, Nov 19 2025, 22:43:52) [MSC v.1944 64 bit (AMD64)]",
+    "reportPath": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\reports\\redis-recover.json",
+    "hotspots": [
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\quicklist.c",
+        "line": 1941,
+        "endLine": 3238,
+        "name": "quicklist.quicklistTest",
+        "complexity": 169,
+        "sloc": 995,
+        "mass": 5330.871879908576
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\rdb.c",
+        "line": 1725,
+        "endLine": 2679,
+        "name": "rdb.rdbLoadObject",
+        "complexity": 191,
+        "sloc": 660,
+        "mass": 4906.87884505008
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\cluster.c",
+        "line": 5165,
+        "endLine": 5833,
+        "name": "cluster.clusterCommand",
+        "complexity": 162,
+        "sloc": 472,
+        "mass": 3519.54087914887
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\debug.c",
+        "line": 387,
+        "endLine": 998,
+        "name": "debug.debugCommand",
+        "complexity": 151,
+        "sloc": 514,
+        "mass": 3423.4067827238996
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\networking.c",
+        "line": 2886,
+        "endLine": 3410,
+        "name": "networking.clientCommand",
+        "complexity": 145,
+        "sloc": 402,
+        "mass": 2907.2409600856963
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\redis-cli.c",
+        "line": 1943,
+        "endLine": 2260,
+        "name": "redis-cli.parseOptions",
+        "complexity": 166,
+        "sloc": 286,
+        "mass": 2807.3147311977687
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\server.c",
+        "line": 5167,
+        "endLine": 5921,
+        "name": "server.genRedisInfoString",
+        "complexity": 103,
+        "sloc": 643,
+        "mass": 2611.816800619829
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\redis\\src\\ziplist.c",
+        "line": 1849,
+        "endLine": 2665,
+        "name": "ziplist.ziplistTest",
+        "complexity": 102,
+        "sloc": 551,
+        "mass": 2394.2856972383224
+      }
+    ],
+    "sourceCoverage": {
+      ".c": {
+        "selectedFiles": 95,
+        "parsedFiles": 95,
+        "physicalLines": 128502,
+        "parsedPhysicalLines": 128502,
+        "lineCoverage": 1,
+        "recoveredFiles": 26
+      },
+      ".h": {
+        "selectedFiles": 60,
+        "parsedFiles": 57,
+        "physicalLines": 13555,
+        "parsedPhysicalLines": 8302,
+        "lineCoverage": 0.6124677240870527,
+        "recoveredFiles": 0
+      }
+    },
+    "recoveredSyntaxErrorNodes": 225
+  },
+  {
+    "name": "lua-strict",
+    "tag": "v5.4.4",
+    "remote": "https://github.com/lua/lua",
+    "revision": "5d708c3f9cae12820e415d4f89c9eacbe2ab964b 2022-01-13",
+    "options": {
+      "regex": "^[^/]+\\.[ch]$",
+      "exclude": [
+        "ltests.c",
+        "ltests.h"
+      ],
+      "recover": false
+    },
+    "adapterHashes": {
+      "analyze.py": "53f4b0ed351be81371d78d6c07aab3fe69badfcfeb0e95ff7d72145711031e43",
+      "c_parser.py": "e41beaef030a38ada299eaa22e0cef10118dfc1afc1153e5d5cc46d63993ecbf",
+      "discovery.py": "14e3e7d7ecc5029fa1a8afe667e5f3312743bba08b7d1a3a26dae21360067a5e"
+    },
+    "wallSeconds": 2.569,
+    "selected": 61,
+    "parsed": 11,
+    "failed": 50,
+    "recovered": 0,
+    "sloc": 1306,
+    "functions": 51,
+    "verbosity": 0.004594180704441042,
+    "erosion": 0.6264192624364132,
+    "highComplexityFunctions": 3,
+    "cloneLines": 6,
+    "totalMass": 1155.1847545265182,
+    "analysisSeconds": 1.7226532000058796,
+    "peakWorkingSetMiB": 50.99609375,
+    "selectedPhysicalLines": 29108,
+    "parsedPhysicalLines": 2585,
+    "parsedLineCoverage": 0.08880720076954789,
+    "pythonVersion": "3.14.0 (main, Nov 19 2025, 22:43:52) [MSC v.1944 64 bit (AMD64)]",
+    "reportPath": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\reports\\lua-strict.json",
+    "hotspots": [
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\llex.c",
+        "line": 445,
+        "endLine": 562,
+        "name": "llex.llex",
+        "complexity": 51,
+        "sloc": 91,
+        "mass": 486.5089927226423
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\llex.c",
+        "line": 382,
+        "endLine": 442,
+        "name": "llex.read_string",
+        "complexity": 24,
+        "sloc": 51,
+        "mass": 171.3942822850284
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\llex.c",
+        "line": 280,
+        "endLine": 316,
+        "name": "llex.read_long_string",
+        "complexity": 12,
+        "sloc": 30,
+        "mass": 65.72670690061993
+      }
+    ],
+    "sourceCoverage": {
+      ".c": {
+        "selectedFiles": 34,
+        "parsedFiles": 5,
+        "physicalLines": 23737,
+        "parsedPhysicalLines": 1183,
+        "lineCoverage": 0.049837805956944856,
+        "recoveredFiles": 0
+      },
+      ".h": {
+        "selectedFiles": 27,
+        "parsedFiles": 6,
+        "physicalLines": 5371,
+        "parsedPhysicalLines": 1402,
+        "lineCoverage": 0.26103146527648485,
+        "recoveredFiles": 0
+      }
+    },
+    "recoveredSyntaxErrorNodes": 0
+  },
+  {
+    "name": "lua-recover",
+    "tag": "v5.4.4",
+    "remote": "https://github.com/lua/lua",
+    "revision": "5d708c3f9cae12820e415d4f89c9eacbe2ab964b 2022-01-13",
+    "options": {
+      "regex": "^[^/]+\\.[ch]$",
+      "exclude": [
+        "ltests.c",
+        "ltests.h"
+      ],
+      "recover": true
+    },
+    "adapterHashes": {
+      "analyze.py": "53f4b0ed351be81371d78d6c07aab3fe69badfcfeb0e95ff7d72145711031e43",
+      "c_parser.py": "e41beaef030a38ada299eaa22e0cef10118dfc1afc1153e5d5cc46d63993ecbf",
+      "discovery.py": "14e3e7d7ecc5029fa1a8afe667e5f3312743bba08b7d1a3a26dae21360067a5e"
+    },
+    "wallSeconds": 3.504,
+    "selected": 61,
+    "parsed": 38,
+    "failed": 23,
+    "recovered": 27,
+    "sloc": 14617,
+    "functions": 1190,
+    "verbosity": 0.02148183621810221,
+    "erosion": 0.4497977365900137,
+    "highComplexityFunctions": 55,
+    "cloneLines": 314,
+    "totalMass": 18884.77001769529,
+    "analysisSeconds": 2.578458899995894,
+    "peakWorkingSetMiB": 74.9765625,
+    "selectedPhysicalLines": 29108,
+    "parsedPhysicalLines": 24971,
+    "parsedLineCoverage": 0.8578741239521781,
+    "pythonVersion": "3.14.0 (main, Nov 19 2025, 22:43:52) [MSC v.1944 64 bit (AMD64)]",
+    "reportPath": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\reports\\lua-recover.json",
+    "hotspots": [
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\lvm.c",
+        "line": 1139,
+        "endLine": 1838,
+        "name": "lvm.luaV_execute",
+        "complexity": 61,
+        "sloc": 565,
+        "mass": 1449.953447528575
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\lvm.c",
+        "line": 1177,
+        "endLine": 1836,
+        "name": "lvm.luaV_execute.GET_OPCODE",
+        "complexity": 55,
+        "sloc": 532,
+        "mass": 1268.5818854137876
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\llex.c",
+        "line": 445,
+        "endLine": 562,
+        "name": "llex.llex",
+        "complexity": 51,
+        "sloc": 91,
+        "mass": 486.5089927226423
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\lstrlib.c",
+        "line": 570,
+        "endLine": 669,
+        "name": "lstrlib.match",
+        "complexity": 37,
+        "sloc": 77,
+        "mass": 324.6736823335085
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\lstrlib.c",
+        "line": 1273,
+        "endLine": 1378,
+        "name": "lstrlib.str_format",
+        "complexity": 27,
+        "sloc": 89,
+        "mass": 254.7174905655283
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\lcode.c",
+        "line": 1660,
+        "endLine": 1737,
+        "name": "lcode.luaK_posfix",
+        "complexity": 28,
+        "sloc": 59,
+        "mass": 215.07208094032103
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\lvm.c",
+        "line": 809,
+        "endLine": 872,
+        "name": "lvm.luaV_finishOp",
+        "complexity": 30,
+        "sloc": 50,
+        "mass": 212.13203435596427
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\lua\\lapi.c",
+        "line": 1136,
+        "endLine": 1232,
+        "name": "lapi.lua_gc",
+        "complexity": 23,
+        "sloc": 81,
+        "mass": 207
+      }
+    ],
+    "sourceCoverage": {
+      ".c": {
+        "selectedFiles": 34,
+        "parsedFiles": 32,
+        "physicalLines": 23737,
+        "parsedPhysicalLines": 23569,
+        "lineCoverage": 0.9929224417575936,
+        "recoveredFiles": 27
+      },
+      ".h": {
+        "selectedFiles": 27,
+        "parsedFiles": 6,
+        "physicalLines": 5371,
+        "parsedPhysicalLines": 1402,
+        "lineCoverage": 0.26103146527648485,
+        "recoveredFiles": 0
+      }
+    },
+    "recoveredSyntaxErrorNodes": 221
+  },
+  {
+    "name": "zlib-strict",
+    "tag": "v1.2.12",
+    "remote": "https://github.com/madler/zlib",
+    "revision": "21767c654d31d2dccdde4330529775c6c5fd5389 2022-03-27",
+    "options": {
+      "regex": "^[^/]+\\.[ch]$",
+      "exclude": [
+        "crc32.h",
+        "inffixed.h",
+        "trees.h"
+      ],
+      "recover": false
+    },
+    "adapterHashes": {
+      "analyze.py": "53f4b0ed351be81371d78d6c07aab3fe69badfcfeb0e95ff7d72145711031e43",
+      "c_parser.py": "e41beaef030a38ada299eaa22e0cef10118dfc1afc1153e5d5cc46d63993ecbf",
+      "discovery.py": "14e3e7d7ecc5029fa1a8afe667e5f3312743bba08b7d1a3a26dae21360067a5e"
+    },
+    "wallSeconds": 2.425,
+    "selected": 23,
+    "parsed": 0,
+    "failed": 23,
+    "recovered": 0,
+    "sloc": 0,
+    "functions": 0,
+    "verbosity": 0,
+    "erosion": null,
+    "highComplexityFunctions": 0,
+    "cloneLines": 0,
+    "totalMass": 0,
+    "analysisSeconds": 0.7645904999953927,
+    "peakWorkingSetMiB": 49.546875,
+    "selectedPhysicalLines": 13559,
+    "parsedPhysicalLines": 0,
+    "parsedLineCoverage": 0,
+    "pythonVersion": "3.14.0 (main, Nov 19 2025, 22:43:52) [MSC v.1944 64 bit (AMD64)]",
+    "reportPath": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\reports\\zlib-strict.json",
+    "hotspots": [],
+    "sourceCoverage": {
+      ".c": {
+        "selectedFiles": 15,
+        "parsedFiles": 0,
+        "physicalLines": 10052,
+        "parsedPhysicalLines": 0,
+        "lineCoverage": 0,
+        "recoveredFiles": 0
+      },
+      ".h": {
+        "selectedFiles": 8,
+        "parsedFiles": 0,
+        "physicalLines": 3507,
+        "parsedPhysicalLines": 0,
+        "lineCoverage": 0,
+        "recoveredFiles": 0
+      }
+    },
+    "recoveredSyntaxErrorNodes": 0
+  },
+  {
+    "name": "zlib-recover",
+    "tag": "v1.2.12",
+    "remote": "https://github.com/madler/zlib",
+    "revision": "21767c654d31d2dccdde4330529775c6c5fd5389 2022-03-27",
+    "options": {
+      "regex": "^[^/]+\\.[ch]$",
+      "exclude": [
+        "crc32.h",
+        "inffixed.h",
+        "trees.h"
+      ],
+      "recover": true
+    },
+    "adapterHashes": {
+      "analyze.py": "53f4b0ed351be81371d78d6c07aab3fe69badfcfeb0e95ff7d72145711031e43",
+      "c_parser.py": "e41beaef030a38ada299eaa22e0cef10118dfc1afc1153e5d5cc46d63993ecbf",
+      "discovery.py": "14e3e7d7ecc5029fa1a8afe667e5f3312743bba08b7d1a3a26dae21360067a5e"
+    },
+    "wallSeconds": 1.995,
+    "selected": 23,
+    "parsed": 15,
+    "failed": 8,
+    "recovered": 15,
+    "sloc": 6174,
+    "functions": 160,
+    "verbosity": 0.12876579203109814,
+    "erosion": 0.7983157538200641,
+    "highComplexityFunctions": 38,
+    "cloneLines": 795,
+    "totalMass": 10427.603616034952,
+    "analysisSeconds": 1.120700499988743,
+    "peakWorkingSetMiB": 58.1640625,
+    "selectedPhysicalLines": 13559,
+    "parsedPhysicalLines": 10052,
+    "parsedLineCoverage": 0.7413526071244192,
+    "pythonVersion": "3.14.0 (main, Nov 19 2025, 22:43:52) [MSC v.1944 64 bit (AMD64)]",
+    "reportPath": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\reports\\zlib-recover.json",
+    "hotspots": [
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\zlib\\deflate.c",
+        "line": 804,
+        "endLine": 1116,
+        "name": "deflate.deflate",
+        "complexity": 85,
+        "sloc": 215,
+        "mass": 1246.3446553822903
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\zlib\\infback.c",
+        "line": 250,
+        "endLine": 630,
+        "name": "infback.inflateBack",
+        "complexity": 71,
+        "sloc": 292,
+        "mass": 1213.2485318350894
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\zlib\\inffast.c",
+        "line": 50,
+        "endLine": 307,
+        "name": "inffast.inflate_fast",
+        "complexity": 44,
+        "sloc": 215,
+        "mass": 645.1666451390679
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\zlib\\inftrees.c",
+        "line": 32,
+        "endLine": 304,
+        "name": "inftrees.inflate_table",
+        "complexity": 42,
+        "sloc": 155,
+        "mass": 522.8957831155268
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\zlib\\gzlib.c",
+        "line": 93,
+        "endLine": 269,
+        "name": "gzlib.gz_open",
+        "complexity": 37,
+        "sloc": 142,
+        "mass": 440.9058856490804
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\zlib\\deflate.c",
+        "line": 1685,
+        "endLine": 1863,
+        "name": "deflate.deflate_stored",
+        "complexity": 43,
+        "sloc": 105,
+        "mass": 440.6188829362627
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\zlib\\deflate.c",
+        "line": 1276,
+        "endLine": 1417,
+        "name": "deflate.longest_match@deflate:1276-1417(s,cur_match)",
+        "complexity": 32,
+        "sloc": 76,
+        "mass": 278.96953238660313
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\zlib\\deflate.c",
+        "line": 243,
+        "endLine": 388,
+        "name": "deflate.deflateInit2_",
+        "complexity": 27,
+        "sloc": 82,
+        "mass": 244.49539872971027
+      }
+    ],
+    "sourceCoverage": {
+      ".c": {
+        "selectedFiles": 15,
+        "parsedFiles": 15,
+        "physicalLines": 10052,
+        "parsedPhysicalLines": 10052,
+        "lineCoverage": 1,
+        "recoveredFiles": 15
+      },
+      ".h": {
+        "selectedFiles": 8,
+        "parsedFiles": 0,
+        "physicalLines": 3507,
+        "parsedPhysicalLines": 0,
+        "lineCoverage": 0,
+        "recoveredFiles": 0
+      }
+    },
+    "recoveredSyntaxErrorNodes": 496
+  },
+  {
+    "name": "linux-math-strict",
+    "tag": "v5.18",
+    "remote": "https://github.com/torvalds/linux",
+    "revision": "4b0986a3613c92f4ec1bdc7f60ec66fea135991f 2022-05-22",
+    "options": {
+      "regex": "\\.[ch]$",
+      "recover": false
+    },
+    "adapterHashes": {
+      "analyze.py": "53f4b0ed351be81371d78d6c07aab3fe69badfcfeb0e95ff7d72145711031e43",
+      "c_parser.py": "e41beaef030a38ada299eaa22e0cef10118dfc1afc1153e5d5cc46d63993ecbf",
+      "discovery.py": "14e3e7d7ecc5029fa1a8afe667e5f3312743bba08b7d1a3a26dae21360067a5e"
+    },
+    "wallSeconds": 1.44,
+    "selected": 11,
+    "parsed": 9,
+    "failed": 2,
+    "recovered": 0,
+    "sloc": 397,
+    "functions": 20,
+    "verbosity": 0.042821158690176324,
+    "erosion": 0.33852346488694135,
+    "highComplexityFunctions": 2,
+    "cloneLines": 17,
+    "totalMass": 348.07343239821915,
+    "analysisSeconds": 0.48980979999760166,
+    "peakWorkingSetMiB": 47.61328125,
+    "selectedPhysicalLines": 1347,
+    "parsedPhysicalLines": 782,
+    "parsedLineCoverage": 0.5805493689680772,
+    "pythonVersion": "3.14.0 (main, Nov 19 2025, 22:43:52) [MSC v.1944 64 bit (AMD64)]",
+    "sourceCoverage": {
+      ".c": {
+        "selectedFiles": 11,
+        "parsedFiles": 9,
+        "physicalLines": 1347,
+        "parsedPhysicalLines": 782,
+        "lineCoverage": 0.5805493689680772,
+        "recoveredFiles": 0
+      },
+      ".h": {
+        "selectedFiles": 0,
+        "parsedFiles": 0,
+        "physicalLines": 0,
+        "parsedPhysicalLines": 0,
+        "lineCoverage": null,
+        "recoveredFiles": 0
+      }
+    },
+    "reportPath": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\reports\\linux-math-strict.json",
+    "hotspots": [
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\lib\\math\\rational.c",
+        "line": 35,
+        "endLine": 107,
+        "name": "rational.rational_best_approximation",
+        "complexity": 11,
+        "sloc": 35,
+        "mass": 65.07687761409578
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\lib\\math\\gcd.c",
+        "line": 50,
+        "endLine": 81,
+        "name": "gcd.gcd@gcd:50-81(a,b)",
+        "complexity": 11,
+        "sloc": 23,
+        "mass": 52.75414675643991
+      }
+    ],
+    "recoveredSyntaxErrorNodes": 0
+  },
+  {
+    "name": "linux-math-recover",
+    "tag": "v5.18",
+    "remote": "https://github.com/torvalds/linux",
+    "revision": "4b0986a3613c92f4ec1bdc7f60ec66fea135991f 2022-05-22",
+    "options": {
+      "regex": "\\.[ch]$",
+      "recover": true
+    },
+    "adapterHashes": {
+      "analyze.py": "53f4b0ed351be81371d78d6c07aab3fe69badfcfeb0e95ff7d72145711031e43",
+      "c_parser.py": "e41beaef030a38ada299eaa22e0cef10118dfc1afc1153e5d5cc46d63993ecbf",
+      "discovery.py": "14e3e7d7ecc5029fa1a8afe667e5f3312743bba08b7d1a3a26dae21360067a5e"
+    },
+    "wallSeconds": 1.169,
+    "selected": 11,
+    "parsed": 11,
+    "failed": 0,
+    "recovered": 2,
+    "sloc": 783,
+    "functions": 35,
+    "verbosity": 0.037037037037037035,
+    "erosion": 0.3310036099650887,
+    "highComplexityFunctions": 3,
+    "cloneLines": 29,
+    "totalMass": 563.8021847492785,
+    "analysisSeconds": 0.3459309000027133,
+    "peakWorkingSetMiB": 48.265625,
+    "selectedPhysicalLines": 1347,
+    "parsedPhysicalLines": 1347,
+    "parsedLineCoverage": 1,
+    "pythonVersion": "3.14.0 (main, Nov 19 2025, 22:43:52) [MSC v.1944 64 bit (AMD64)]",
+    "sourceCoverage": {
+      ".c": {
+        "selectedFiles": 11,
+        "parsedFiles": 11,
+        "physicalLines": 1347,
+        "parsedPhysicalLines": 1347,
+        "lineCoverage": 1,
+        "recoveredFiles": 2
+      },
+      ".h": {
+        "selectedFiles": 0,
+        "parsedFiles": 0,
+        "physicalLines": 0,
+        "parsedPhysicalLines": 0,
+        "lineCoverage": null,
+        "recoveredFiles": 0
+      }
+    },
+    "reportPath": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\reports\\linux-math-recover.json",
+    "hotspots": [
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\lib\\math\\test_div64.c",
+        "line": 186,
+        "endLine": 218,
+        "name": "test_div64.test_div64",
+        "complexity": 13,
+        "sloc": 28,
+        "mass": 68.78953408767936
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\lib\\math\\rational.c",
+        "line": 35,
+        "endLine": 107,
+        "name": "rational.rational_best_approximation",
+        "complexity": 11,
+        "sloc": 35,
+        "mass": 65.07687761409578
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\lib\\math\\gcd.c",
+        "line": 50,
+        "endLine": 81,
+        "name": "gcd.gcd@gcd:50-81(a,b)",
+        "complexity": 11,
+        "sloc": 23,
+        "mass": 52.75414675643991
+      }
+    ],
+    "recoveredSyntaxErrorNodes": 6
+  },
+  {
+    "name": "linux-locking-strict",
+    "tag": "v5.18",
+    "remote": "https://github.com/torvalds/linux",
+    "revision": "4b0986a3613c92f4ec1bdc7f60ec66fea135991f 2022-05-22",
+    "options": {
+      "regex": "\\.[ch]$",
+      "recover": false
+    },
+    "adapterHashes": {
+      "analyze.py": "53f4b0ed351be81371d78d6c07aab3fe69badfcfeb0e95ff7d72145711031e43",
+      "c_parser.py": "e41beaef030a38ada299eaa22e0cef10118dfc1afc1153e5d5cc46d63993ecbf",
+      "discovery.py": "14e3e7d7ecc5029fa1a8afe667e5f3312743bba08b7d1a3a26dae21360067a5e"
+    },
+    "wallSeconds": 1.744,
+    "selected": 31,
+    "parsed": 5,
+    "failed": 26,
+    "recovered": 0,
+    "sloc": 282,
+    "functions": 32,
+    "verbosity": 0.0425531914893617,
+    "erosion": 0,
+    "highComplexityFunctions": 0,
+    "cloneLines": 12,
+    "totalMass": 129.33646744011108,
+    "analysisSeconds": 0.8570334999967599,
+    "peakWorkingSetMiB": 50.7265625,
+    "selectedPhysicalLines": 19337,
+    "parsedPhysicalLines": 590,
+    "parsedLineCoverage": 0.030511454724104048,
+    "pythonVersion": "3.14.0 (main, Nov 19 2025, 22:43:52) [MSC v.1944 64 bit (AMD64)]",
+    "sourceCoverage": {
+      ".c": {
+        "selectedFiles": 21,
+        "parsedFiles": 3,
+        "physicalLines": 17287,
+        "parsedPhysicalLines": 424,
+        "lineCoverage": 0.024527101289986697,
+        "recoveredFiles": 0
+      },
+      ".h": {
+        "selectedFiles": 10,
+        "parsedFiles": 2,
+        "physicalLines": 2050,
+        "parsedPhysicalLines": 166,
+        "lineCoverage": 0.08097560975609756,
+        "recoveredFiles": 0
+      }
+    },
+    "reportPath": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\reports\\linux-locking-strict.json",
+    "hotspots": [],
+    "recoveredSyntaxErrorNodes": 0
+  },
+  {
+    "name": "linux-locking-recover",
+    "tag": "v5.18",
+    "remote": "https://github.com/torvalds/linux",
+    "revision": "4b0986a3613c92f4ec1bdc7f60ec66fea135991f 2022-05-22",
+    "options": {
+      "regex": "\\.[ch]$",
+      "recover": true
+    },
+    "adapterHashes": {
+      "analyze.py": "53f4b0ed351be81371d78d6c07aab3fe69badfcfeb0e95ff7d72145711031e43",
+      "c_parser.py": "e41beaef030a38ada299eaa22e0cef10118dfc1afc1153e5d5cc46d63993ecbf",
+      "discovery.py": "14e3e7d7ecc5029fa1a8afe667e5f3312743bba08b7d1a3a26dae21360067a5e"
+    },
+    "wallSeconds": 2.487,
+    "selected": 31,
+    "parsed": 29,
+    "failed": 2,
+    "recovered": 24,
+    "sloc": 9235,
+    "functions": 782,
+    "verbosity": 0.10167839740119113,
+    "erosion": 0.38842075567375267,
+    "highComplexityFunctions": 25,
+    "cloneLines": 939,
+    "totalMass": 9675.177940545247,
+    "analysisSeconds": 1.5922779999964405,
+    "peakWorkingSetMiB": 65.7578125,
+    "selectedPhysicalLines": 19337,
+    "parsedPhysicalLines": 19260,
+    "parsedLineCoverage": 0.9960179965868542,
+    "pythonVersion": "3.14.0 (main, Nov 19 2025, 22:43:52) [MSC v.1944 64 bit (AMD64)]",
+    "sourceCoverage": {
+      ".c": {
+        "selectedFiles": 21,
+        "parsedFiles": 21,
+        "physicalLines": 17287,
+        "parsedPhysicalLines": 17287,
+        "lineCoverage": 1,
+        "recoveredFiles": 18
+      },
+      ".h": {
+        "selectedFiles": 10,
+        "parsedFiles": 8,
+        "physicalLines": 2050,
+        "parsedPhysicalLines": 1973,
+        "lineCoverage": 0.9624390243902439,
+        "recoveredFiles": 6
+      }
+    },
+    "reportPath": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\reports\\linux-locking-recover.json",
+    "hotspots": [
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\kernel\\locking\\locktorture.c",
+        "line": 900,
+        "endLine": 1114,
+        "name": "locktorture.lock_torture_init",
+        "complexity": 46,
+        "sloc": 152,
+        "mass": 567.1260882731458
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\kernel\\locking\\rtmutex.c",
+        "line": 574,
+        "endLine": 956,
+        "name": "rtmutex.rt_mutex_adjust_prio_chain",
+        "complexity": 32,
+        "sloc": 110,
+        "mass": 335.6188314144485
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\kernel\\locking\\lockdep.c",
+        "line": 4883,
+        "endLine": 5056,
+        "name": "lockdep.__lock_acquire",
+        "complexity": 31,
+        "sloc": 104,
+        "mass": 316.1392098427526
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\kernel\\locking\\mutex.c",
+        "line": 565,
+        "endLine": 727,
+        "name": "mutex.__mutex_lock_common",
+        "complexity": 25,
+        "sloc": 90,
+        "mass": 237.17082451262846
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\kernel\\locking\\lockdep_proc.c",
+        "line": 231,
+        "endLine": 392,
+        "name": "lockdep_proc.lockdep_stats_show",
+        "complexity": 17,
+        "sloc": 137,
+        "mass": 198.97989848223364
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\kernel\\locking\\lockdep_proc.c",
+        "line": 458,
+        "endLine": 568,
+        "name": "lockdep_proc.seq_stats",
+        "complexity": 20,
+        "sloc": 82,
+        "mass": 181.10770276274835
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\kernel\\locking\\qspinlock.c",
+        "line": 315,
+        "endLine": 561,
+        "name": "qspinlock.queued_spin_lock_slowpath",
+        "complexity": 18,
+        "sloc": 69,
+        "mass": 149.51922953252534
+      },
+      {
+        "kind": "complexity",
+        "file": "C:\\Users\\ltumi\\.cache\\pi-sloppiness-calibration\\2026-10-21\\linux-sample\\kernel\\locking\\lockdep.c",
+        "line": 1247,
+        "endLine": 1353,
+        "name": "lockdep.register_lock_class",
+        "complexity": 18,
+        "sloc": 67,
+        "mass": 147.3363498937041
+      }
+    ],
+    "recoveredSyntaxErrorNodes": 399
+  }
+]

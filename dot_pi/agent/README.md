@@ -43,6 +43,18 @@ normal-Pi-only, off until `/om` is toggled on.
 
 After applying or changing extensions, restart Pi or use `/reload` as appropriate.
 
+## Code sloppiness
+
+Use `/sloppiness [folder-or-file-or-glob]` for an on-demand local verbosity and erosion
+report. Omit the path to scan the working directory; quote paths with spaces.
+Use `--include`, `--exclude`, or `--regex` to narrow selection and `--list` to
+preview files. `--recover` enables approximate analysis of macro-heavy C code.
+The `code_sloppiness` tool exposes the same data to the model. Reports focus on
+measurements and hotspots, without a human-code baseline comparison.
+Requires `uv` on PATH; the first scan downloads the pinned analyzer.
+See the [sloppiness extension guide](extensions/sloppiness/README.md) for coverage,
+exclusions, saved reports, and cancellation.
+
 ## Local llama.cpp
 
 Use `/local` to start the local router if needed, load a configured profile, and

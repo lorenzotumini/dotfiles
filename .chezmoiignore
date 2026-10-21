@@ -16,7 +16,15 @@ tests/**
 .glzr/glazewm/errors.log
 .glzr/zebar/errors.log
 .luarc.json
-__pycache__/
+# Python environments and bytecode at any depth (Git ignores are separate).
+**/.venv
+**/.venv/**
+**/venv
+**/venv/**
+**/__pycache__
+**/__pycache__/**
+**/*.pyc
+**/*.pyo
 
 # OS-specific config trees
 {{ if eq .chezmoi.os "windows" }}
