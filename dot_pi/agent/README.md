@@ -1,81 +1,46 @@
 # Pi user configuration
 
-This directory is managed by chezmoi. Credentials and machine/session state are
-intentionally not tracked: `auth.json`, `models-store.json`, `trust.json`, and
-`sessions/` remain local.
+Chezmoi deploys this directory to `~/.pi/agent/`. It contains extensions, skills,
+and optional integrations. Authentication, sessions, trust, model-store state,
+and most settings remain local. On Windows, the settings modifier manages only
+`tuiMode`; see [terminal workarounds](extensions/windows-terminal-colors/README.md).
 
-## Dependencies
+## Features
 
-Chezmoi tracks source and lockfiles, not generated dependencies:
+| Feature | Entry point / guide |
+|---|---|
+| Web search and page/PDF extraction | [web-search](extensions/web-search/README.md), [web-fetch](extensions/web-fetch/README.md) |
+| Interactive browser | `/browser` — [setup and usage](extensions/browser/README.md) |
+| Shell command checks | `/bash-guard` — [behavior and defaults](extensions/bash-guard/README.md) |
+| Herdr subagents | `/subagents` — [requirements and usage](extensions/interactive-subagents/README.md) |
+| Observational memory | `/om` — [opt-in, Linux only](extensions/observational-memory/README.md) |
+| Learning, quizzes, Markdown logging | `/learn`, `/learn:status`, `/md-log`, `/md-log:status` — [implementation](extensions/learn/index.ts) |
+| Code sloppiness reports | `/sloppiness` — [usage and dependencies](extensions/sloppiness/README.md) |
+| Local llama.cpp models | `/local` — [setup and maintenance](local-llama/README.md) |
+| UI helpers | [balanced footer](extensions/footer-layout/README.md), [user questions](extensions/ask-user-question.ts) |
+| Herdr pane status | [Herdr-managed integration](extensions/herdr-agent-state.ts) |
 
-```bash
-cd ~/.pi/agent/extensions/bash-guard && npm ci --ignore-scripts
-cd ~/.pi/agent/extensions/browser && npm ci --ignore-scripts
-cd ~/.pi/agent/extensions/web-fetch && npm ci --ignore-scripts
-cd ~/.pi/agent/extensions/web-search && npm ci --ignore-scripts
-cd ~/.pi/agent/optional/interactive-subagents && npm ci --ignore-scripts
-cd ~/.pi/agent/optional/observational-memory && npm ci --ignore-scripts
+Skills cover session analysis, PDFs, YouTube transcripts, ComfyUI, web debugging,
+and tldraw. Each lives under `skills/` with its own `SKILL.md`. The tldraw skill
+uses a [manually maintained copy](skills/manual/tldraw-offline/README.md).
+
+## Setup
+
+Chezmoi tracks source and lockfiles, not generated dependencies. Install the
+extension dependencies after deployment:
+
+```sh
+cd ~/.pi/agent
+npm --prefix extensions/bash-guard ci --ignore-scripts
+npm --prefix extensions/browser ci --ignore-scripts
+npm --prefix extensions/web-fetch ci --ignore-scripts
+npm --prefix extensions/web-search ci --ignore-scripts
 ```
 
-For PDF and YouTube helpers, install their dependencies into local environments
-rather than this config tree. Chezmoi ignores `.venv/`, Python caches and
-`node_modules/`.
+Follow the browser guide to install Chromium, and the subagent/memory guides
+for dependencies under `optional/`. Skills list their own prerequisites; keep
+Python environments and downloaded assets outside the tracked source tree.
 
-## Learning tools
-
-The teaching guide and `quiz` extension support learning sessions. Use `/learn`
-to toggle learning mode and quiz access; `/learn:status` reports the current
-mode. The guide is kept outside Pi's skills directory and is loaded only while
-learning mode is on. The mode is off by default and follows the active session
-branch. These features use Pi's existing APIs and require no additional
-packages. The `researcher` subagent is bundled with interactive-subagents and
-uses the existing `web_search`, `web_fetch`, and `safe_bash` tools.
-
-The `md-log` extension has no AI-facing tools, so its user commands remain
-available independently of learning mode. Bare `/md-log` toggles logging; when
-enabling, it asks for an existing Markdown file. Use `/md-log:link <path>` to
-link or change the file and `/md-log:status` to inspect the state.
-
-The interactive-subagents integration is deployed on Windows and Linux. Normal
-Pi enables it when launched inside Herdr; `pi-lean` loads it but keeps it off
-until `/subagents` is toggled on. Observational memory remains Linux-only and
-normal-Pi-only, off until `/om` is toggled on.
-
-After applying or changing extensions, restart Pi or use `/reload` as appropriate.
-
-## Windows terminal color replies
-
-The `windows-terminal-colors` extension skips Pi's terminal color queries on
-Windows. Alacritty and WezTerm's ConPTY paths can deliver palette replies without
-their OSC headers, inserting `rgb:...` into the prompt; a BEL terminator then
-triggers Ctrl+G and launches the external editor. This can recur on `/reload` or
-`/resume`. See [Pi issue #10256](https://github.com/earendil-works/pi/issues/10256).
-
-Use an explicit Pi theme such as `dark` or `light`; the `system` theme and automatic
-terminal appearance detection cannot read the terminal palette with this
-workaround. It also skips the queries in Windows Terminal. Linux is unaffected.
-The extension wraps `queryTerminalColors()` in both Pi screen classes before startup
-and survives `/reload` without stacking wrappers. To restore queries after an
-upstream fix, set `$env:PI_TERMINAL_COLOR_QUERIES = '1'` before launching Pi, or
-remove the extension and restart Pi.
-
-## Code sloppiness
-
-Use `/sloppiness [folder-or-file-or-glob]` for an on-demand local verbosity and erosion
-report. Omit the path to scan the working directory; quote paths with spaces.
-Use `--include`, `--exclude`, or `--regex` to narrow selection and `--list` to
-preview files. `--recover` enables approximate analysis of macro-heavy C code.
-The `code_sloppiness` tool exposes the same data to the model. Reports focus on
-measurements and hotspots, without a human-code baseline comparison.
-Requires `uv` on PATH; the first scan downloads the pinned analyzer.
-See the [sloppiness extension guide](extensions/sloppiness/README.md) for coverage,
-exclusions, saved reports, and cancellation.
-
-## Local llama.cpp
-
-Use `/local` to start the local router if needed, load a configured profile, and
-select it in Pi. Model/runtime/thinking settings live in
-[`local-llama/models.json`](local-llama/models.json); see the
-[setup and maintenance guide](local-llama/README.md). Generated files stay in
-`~/.cache/pi-local-llama/`, weights stay on the SSD, and the API key stays outside
-chezmoi.
+Restart Pi or use `/reload` after extension changes. Learning and memory start
+off; subagents require a Herdr-managed pane. Linux also has a `pi-lean` launcher
+with a restricted extension set and no automatic skill discovery.

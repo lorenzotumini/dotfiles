@@ -1,0 +1,4 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- $settings := .chezmoi.stdin | default "{}" | fromJson -}}
+{{- $_ := set $settings "tuiMode" "regular" -}}
+{{ $settings | toPrettyJson }}

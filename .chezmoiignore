@@ -64,6 +64,8 @@ tests/**
 .ssh/config
 .zshrc
 {{ else }}
+# Pi's regular-mode workaround is only needed on Windows.
+.pi/agent/settings.json
 AppData/**
 Documents/PowerShell/**
 .glzr/**
