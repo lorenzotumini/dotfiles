@@ -43,6 +43,22 @@ normal-Pi-only, off until `/om` is toggled on.
 
 After applying or changing extensions, restart Pi or use `/reload` as appropriate.
 
+## Windows terminal color replies
+
+The `windows-terminal-colors` extension skips Pi's terminal color queries on
+Windows. Alacritty and WezTerm's ConPTY paths can deliver palette replies without
+their OSC headers, inserting `rgb:...` into the prompt; a BEL terminator then
+triggers Ctrl+G and launches the external editor. This can recur on `/reload` or
+`/resume`. See [Pi issue #10256](https://github.com/earendil-works/pi/issues/10256).
+
+Use an explicit Pi theme such as `dark` or `light`; the `system` theme and automatic
+terminal appearance detection cannot read the terminal palette with this
+workaround. It also skips the queries in Windows Terminal. Linux is unaffected.
+The extension wraps `queryTerminalColors()` in both Pi screen classes before startup
+and survives `/reload` without stacking wrappers. To restore queries after an
+upstream fix, set `$env:PI_TERMINAL_COLOR_QUERIES = '1'` before launching Pi, or
+remove the extension and restart Pi.
+
 ## Code sloppiness
 
 Use `/sloppiness [folder-or-file-or-glob]` for an on-demand local verbosity and erosion
