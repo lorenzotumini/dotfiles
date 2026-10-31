@@ -3,4 +3,4 @@
 # The desktop display widget normally controls font-size through
 # ~/.local/state/desktop-core/ghostty-font-size.conf. Uncommenting the next
 # line opts Ghostty out of that global terminal-size setting:
-font-size = 12
+font-size = 15

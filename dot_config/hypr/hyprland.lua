@@ -140,7 +140,7 @@ local function bind(keys, dispatcher, description, options)
 end
 
 -- Programs and session controls.
-bind("SUPER + ALT + SUPER_L", hl.dsp.exec_cmd(home .. "/.local/bin/power-menu"), "Power menu", { release = true })
+bind("SUPER + SHIFT + P", hl.dsp.exec_cmd(home .. "/.local/bin/power-menu"), "Power menu")
 bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal), "Terminal")
 bind(mainMod .. " + Q", hl.dsp.window.close(), "Close window")
 bind(mainMod .. " + D", hl.dsp.exec_cmd(menu), "Application launcher")

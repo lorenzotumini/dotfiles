@@ -44,6 +44,7 @@ Resize
   Super+Shift+Alt+-/=         Vertical resize by a small amount
 
 Desktop core
+  Super+Shift+P               Power menu
   Super+S                     Show/hide scratchpad
   Super+Alt+S                 Send window to scratchpad
   Super+Shift+Space           Toggle top bar
