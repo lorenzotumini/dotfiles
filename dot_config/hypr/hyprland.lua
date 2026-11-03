@@ -57,6 +57,10 @@ end
 hl.env("PATH", sessionPath)
 
 hl.config({
+    render = {
+        -- Keep fullscreen apps from automatically switching the display to HDR.
+        cm_auto_hdr = false,
+    },
     -- Let XWayland applications render at native pixels. Applications that
     -- need scaling (currently Sioyek) opt into it themselves.
     xwayland = {
