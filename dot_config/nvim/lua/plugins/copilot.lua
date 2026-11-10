@@ -187,8 +187,8 @@ return {
 				},
 			},
 			nes = {
-				enabled = true,
-				auto_trigger = true,
+				enabled = false,
+				auto_trigger = false,
 				keymap = {
 					accept_and_goto = false,
 					accept = false,
