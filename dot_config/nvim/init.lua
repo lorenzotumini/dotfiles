@@ -78,6 +78,7 @@ vim.filetype.add({
 		joy = "joy",
 		jai = "jai",
 		p101 = "p101",
+		cl = "c",
 	},
 })
 
