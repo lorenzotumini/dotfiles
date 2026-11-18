@@ -43,6 +43,13 @@
         "on": {"temperature": 1, "top_p": 0.95, "top_k": 20, "min_p": 0, "presence_penalty": 0, "repeat_penalty": 1}
       }
     },
+    "qwen38-pi": {
+      "thinking": "none",
+      "preserveThinking": false,
+      "levels": {"off": "none"},
+      "budgets": {},
+      "sampling": {"off": {"temperature": 0.8}, "on": {}}
+    },
     "qwen36": {
       "thinking": "toggle",
       "preserveThinking": true,
@@ -83,6 +90,16 @@
       "policy": "qwen38",
       "embeddedMtp": true,
       "source": {"repo": "unsloth/Qwen3.8-27B-GGUF", "revision": "4ca720788d1e01f1bff70c033e0d0028fd02e502"}
+    },
+    "qwen38-pi": {
+      "path": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/Qwen3.8-27B-UD-Q4_K_M.gguf",
+      "policy": "qwen38-pi",
+      "embeddedMtp": true
+    },
+    "qwen38-pi-gsq": {
+      "path": "/mnt/shared/AI/models/llama.cpp/qwen3.8-27b/Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp.gguf",
+      "policy": "qwen38-pi",
+      "embeddedMtp": true
     },
     "orcasaq-27b": {
       "path": "/mnt/shared/AI/models/llama.cpp/orcasaq-27b/OrcaSAQ-2-27B-Uncensored.gguf",
@@ -125,6 +142,18 @@
       "id": "qwen3.8-27b-q4", "name": "CODE DEEP · Qwen3.8 Q4 · 128K + MTP", "model": "qwen38-q4",
       "context": 131072, "maxOutput": 32768, "defaultThinking": "medium", "vision": false,
       "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "5,11", "cache-type-k": "q5_0", "cache-type-v": "q5_0", "spec-type": "draft-mtp", "spec-draft-n-max": 2, "spec-draft-type-k": "q8_0", "spec-draft-type-v": "q8_0"}
+    },
+    {
+      "id": "qwen3.8-pi-mtp", "name": "CODE PI · Qwen3.8 Pi LoRA Q4 · 128K + MTP", "model": "qwen38-pi",
+      "loraPath": "/mnt/shared/AI/cache/huggingface/hub/models--harness-hub--Qwen3.8-27B-pi-GGUF/snapshots/20b85264703e29f1b5596a7c81b17bc0b7580cfc/Qwen3.8-27B-pi-lora-F16.gguf",
+      "context": 131072, "maxOutput": 32768, "defaultThinking": "off", "vision": false,
+      "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "5,11", "cache-type-k": "q5_0", "cache-type-v": "q5_0", "spec-type": "draft-mtp", "spec-draft-n-max": 2, "spec-draft-type-k": "f16", "spec-draft-type-v": "f16", "reasoning": "off"}
+    },
+    {
+      "id": "qwen3.8-pi-long-mtp", "name": "LONG PI · Qwen3.8 Pi LoRA IQ3 · 256K + MTP", "model": "qwen38-pi-gsq",
+      "loraPath": "/mnt/shared/AI/cache/huggingface/hub/models--harness-hub--Qwen3.8-27B-pi-GGUF/snapshots/20b85264703e29f1b5596a7c81b17bc0b7580cfc/Qwen3.8-27B-pi-lora-F16.gguf",
+      "context": 262144, "maxOutput": 32768, "defaultThinking": "off", "vision": false,
+      "runtime": {"device": "CUDA0,CUDA1", "split-mode": "layer", "tensor-split": "5,11", "cache-type-k": "q4_0", "cache-type-v": "q4_0", "spec-type": "draft-mtp", "spec-draft-n-max": 3, "spec-draft-type-k": "f16", "spec-draft-type-v": "f16", "reasoning": "off"}
     },
     {
       "id": "gemma-4-31b", "name": "CHAT · Gemma 4 31B QAT Q4 · 40K · Vision + MTP", "model": "gemma4-31b",

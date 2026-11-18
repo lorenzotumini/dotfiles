@@ -5,7 +5,7 @@ import { isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'];
-const RESERVED = new Set(['model', 'mmproj', 'model-draft', 'spec-draft-model', 'ctx-size', 'host', 'port', 'models-preset', 'models-dir', 'models-max', 'models-autoload', 'api-key', 'api-key-file', 'tags', 'alias']);
+const RESERVED = new Set(['model', 'lora', 'mmproj', 'model-draft', 'spec-draft-model', 'ctx-size', 'host', 'port', 'models-preset', 'models-dir', 'models-max', 'models-autoload', 'api-key', 'api-key-file', 'tags', 'alias']);
 // Explicit names avoid aliases overriding generated fields. Extend this list for new runtime features.
 const RUNTIME = new Set(['device', 'n-gpu-layers', 'split-mode', 'tensor-split', 'main-gpu', 'mmproj-device', 'flash-attn', 'threads', 'threads-batch', 'parallel', 'jinja', 'reasoning', 'fit', 'cache-type-k', 'cache-type-v', 'batch-size', 'ubatch-size', 'cache-ram', 'ctx-checkpoints', 'spec-type', 'spec-draft-n-max', 'spec-draft-device', 'spec-draft-type-k', 'spec-draft-type-v']);
 const SAMPLERS = new Set(['temperature', 'top_p', 'top_k', 'min_p', 'presence_penalty', 'frequency_penalty', 'repeat_penalty']);
@@ -89,6 +89,10 @@ export function validateConfig(raw) {
     const model = c.models[p.model];
     if (!Object.hasOwn(c.policies[model.policy].levels, p.defaultThinking)) fail(`${p.id}: unsupported default thinking level`);
     if (typeof p.vision !== 'boolean' || (p.vision && !model.projector)) fail(`${p.id}: vision requires a projector`);
+    if (Object.hasOwn(p, 'loraPath')) {
+      p.loraPath = expandPath(p.loraPath);
+      if (p.loraPath.includes(',')) fail(`${p.id}: loraPath must name one adapter file`);
+    }
     validateRuntime(p.runtime);
     const runtime = { ...c.runtimeDefaults, ...p.runtime };
     if (runtime.parallel !== 1) fail(`${p.id}: this integration currently requires parallel = 1`);
@@ -104,6 +108,7 @@ export function profileOptions(c, p) {
   return {
     ...runtime,
     model: model.path, 'ctx-size': p.context,
+    ...(p.loraPath ? { lora: p.loraPath } : {}),
     ...(p.vision ? { mmproj: model.projector } : {}),
     ...(model.draftPath && runtime['spec-type'] === 'draft-mtp' ? { 'spec-draft-model': model.draftPath } : {}),
   };
@@ -145,7 +150,7 @@ export function renderIni(c) {
 export function checkFiles(c, profiles = c.profiles) {
   const paths = new Set(profiles.flatMap((p) => {
     const opts = profileOptions(c, p);
-    return [opts.model, opts.mmproj, opts['spec-draft-model']].filter(Boolean);
+    return [opts.model, opts.lora, opts.mmproj, opts['spec-draft-model']].filter(Boolean);
   }));
   for (const path of paths) {
     try { accessSync(path, constants.R_OK); } catch { fail(`model file is missing or unreadable: ${path}`); }
@@ -187,8 +192,9 @@ export function requestPayload(c, p, payload, level) {
   delete next.thinking_budget_tokens;
   delete next.max_completion_tokens;
   delete next.repetition_penalty;
-  const requested = payload.max_tokens ?? payload.max_completion_tokens ?? p.maxOutput;
-  next.max_tokens = Math.min(integer(requested, 1) ? requested : p.maxOutput, p.maxOutput);
+  const requested = payload.max_tokens ?? payload.max_completion_tokens;
+  const outputLimit = p.loraPath && requested === 1 ? p.maxOutput : requested;
+  next.max_tokens = Math.min(integer(outputLimit, 1) ? outputLimit : p.maxOutput, p.maxOutput);
   if (policy.thinking !== 'none') {
     next.chat_template_kwargs = { ...payload.chat_template_kwargs, enable_thinking: enabled, preserve_thinking: policy.preserveThinking };
     if (policy.thinking === 'effort') next.reasoning_effort = policy.levels[level];
