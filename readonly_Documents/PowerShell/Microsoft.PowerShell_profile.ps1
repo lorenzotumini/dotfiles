@@ -1,3 +1,6 @@
+# Skip interactive customizations for SSH command sessions (Herdr mobile).
+if ($env:SSH_CONNECTION -and -not $env:SSH_TTY) { return }
+
 # -------- TIMING DIAGNOSTICS --------
 # enable with "$env:PROFILE_TIMING = 1; pwsh"
 if ($env:PROFILE_TIMING) {
