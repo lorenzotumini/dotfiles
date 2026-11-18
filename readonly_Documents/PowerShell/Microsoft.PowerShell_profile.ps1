@@ -161,26 +161,6 @@ function psln ($target, $link) {
 	New-Item -Path $link -ItemType SymbolicLink -Value $target
 }
 
-function start-claude-local {
-    $env:ANTHROPIC_AUTH_TOKEN="freecc"
-    $env:ANTHROPIC_BASE_URL="http://localhost:8082"
-    claude
-}
-
-function ccc {
-    $cwd = (Get-Location).Path
-    $configDir = Join-Path $HOME ".config/free-claude-code"
-
-    if ($env:WT_SESSION) {
-        wt -w 0 new-tab -d "$configDir" -p "PowerShell" free-claude-code
-        wt -w 0 new-tab -d "$cwd" -p "PowerShell" pwsh -NoLogo -NoExit -Command "start-claude-local"
-    }
-    else {
-        Start-Process free-claude-code -WorkingDirectory "$configDir"
-        start-claude-local
-    }
-}
-
 function hist {
 	nvim (Get-PSReadLineOption).HistorySavePath
 }
