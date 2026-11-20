@@ -17,6 +17,8 @@ import { Box, Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 import { writeFileSync } from "node:fs";
 import { createSubagentActivityRecorder } from "./activity.ts";
+import { boundedText } from "./bounds.mjs";
+import { writeTurnReport } from "./turn-report.ts";
 
 export function shouldMarkUserTookOver(agentStarted: boolean): boolean {
   return agentStarted;
@@ -119,7 +121,9 @@ export default function (pi: ExtensionAPI) {
   const subagentName = process.env.PI_SUBAGENT_NAME ?? "";
   const subagentAgent = process.env.PI_SUBAGENT_AGENT ?? "";
   const deniedToolsValue = process.env.PI_DENY_TOOLS;
-  const autoExit = process.env.PI_SUBAGENT_AUTO_EXIT === "1";
+  const reportFile = process.env.PI_SUBAGENT_REPORT_TURNS === "1" ? process.env.PI_SUBAGENT_ACTIVITY_FILE : undefined;
+  const autoExit = !reportFile && process.env.PI_SUBAGENT_AUTO_EXIT === "1";
+  let reportSequence = 1;
   const recorder = createSubagentActivityRecorder({
     runningChildId: process.env.PI_SUBAGENT_ID,
     activityFile: process.env.PI_SUBAGENT_ACTIVITY_FILE,
@@ -266,6 +270,23 @@ export default function (pi: ExtensionAPI) {
       recorder.agentEndDone();
       ctx.shutdown();
       return;
+    }
+
+    if (reportFile && !awaitingAnswer && !hasPendingChildren) {
+      const last = messages?.findLast(message => message?.role === "assistant");
+      if (last && last.stopReason !== "aborted") {
+        const errorInfo = findLatestAssistantError(messages);
+        const text = Array.isArray(last.content)
+          ? last.content.filter(block => block?.type === "text").map(block => block.text).join("\n").trim()
+          : "";
+        try {
+          writeTurnReport(reportFile, reportSequence, {
+            summary: boundedText(text || "Subagent turn ended without text output."),
+            ...(errorInfo ? { errorMessage: boundedText(errorInfo.errorMessage, 2048, 80) } : {}),
+          });
+          reportSequence++;
+        } catch { /* The full turn remains available in the child pane. */ }
+      }
     }
 
     recorder.agentEndWaiting();

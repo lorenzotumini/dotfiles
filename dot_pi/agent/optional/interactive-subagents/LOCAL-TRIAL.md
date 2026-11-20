@@ -9,7 +9,8 @@ updating the vendor checkout.
 
 Normal `pi` discovers `agent/extensions/interactive-subagents/index.ts`, which
 loads this implementation. The three subagent tools are active by default inside
-Herdr and hidden outside it. `pi-lean` loads the same entry, but starts them off:
+Herdr (CLI or app) and hidden outside it. If the extension is loaded in
+`pi-lean`, its tools start off:
 
 ```text
 /subagents        # toggle
@@ -23,29 +24,63 @@ and associated tool instructions, not past results already in conversation histo
 Choose the parent model using `/model`, then try:
 
 ```text
-/subagents:spawn trial-scout Map the main source directories and test entry points. Return a short report without modifying anything or inspecting credentials.
+/subagents:spawn scout Map the main source directories and test entry points. Return a short report without modifying anything or inspecting credentials.
 ```
 
 `/subagents:spawn` asks the parent to call the tool. The scout opens on the right with a
 vertical divider and no requested focus change. The final report returns
-asynchronously; its pane closes on completion. Ask the parent to follow up by the
-scout's display name using `subagent_message`. A finished child is resumed by name
-with its saved model/tool loadout. No polling by the model is needed.
+asynchronously, and its pane stays open for follow-ups. Type in the child pane
+or ask the parent to follow up by its display name via `subagent_message`.
+Close the child with Ctrl+D in its Pi prompt. A closed child can be resumed by
+name with its saved model and tools. Set `PI_SUBAGENT_KEEP_OPEN=0` before
+starting the parent Pi to use the profile's auto-exit behavior.
 
 The standalone `pi-subagents` launcher and live-check script were removed after
 the user confirmed live Herdr operation. The automated regression tests remain.
 
+## Herdr app (herdr-core) backend
+
+Subagents also work inside the **Herdr desktop app**, which runs its terminals
+in `herdr-core` (`hc`) rather than the `herdr` CLI. The app sets `HC_TERMINAL_ID`
++ `HC_TERMINAL_SOCKET` (not the CLI's `HERDR_*` vars). `surface.ts` auto-selects
+the backend from the environment:
+
+- `HERDR_ENV=1` (+ `HERDR_PANE_ID`/`HERDR_SOCKET_PATH`) → `herdr.mjs` (CLI)
+- `HC_TERMINAL_ID` + `HC_TERMINAL_SOCKET` → `herdr-core.mjs` (app)
+- otherwise → `tmux.ts`
+
+`PI_SUBAGENT_MUX` can override: `herdr`, `hc`/`herdr-core`, or `tmux`. The
+gate in the integration entry recognizes both environments; an explicit mux
+must match the detected one.
+
+The app backend starts a Bash terminal in the caller's core and requests a
+right split via `herdr-app do terminal.keep`. It retries while the app discovers
+the child. The child can still run if the desktop window is unavailable. It reports completion through the same
+`.exit` and `.done` files as the CLI backend. The watcher checks the core for
+unexpected terminal exits, and cleanup disables shell recovery before stopping
+and removing the child terminal.
+
+## Subagent models
+
+The bundled profiles inherit the parent's hosted model by default. Model
+selection uses the tool's explicit model, the profile's model, the optional
+`PI_SUBAGENT_MODEL` environment variable, then the current parent model, in that
+order. To choose a hosted model for one launch:
+
+```text
+/subagents:spawn scout --model provider/model List the top-level directories.
+```
+
+When the parent uses a local model, Herdr requires a registered, provider-qualified
+hosted model for the child. Known local providers and loopback endpoints are
+blocked for Herdr subagents, including on resume. Resume uses the saved model
+from the original launch.
+
 ## Scope, context, and safety
 
-- One running read-only `trial-scout` per parent, including in-flight launches.
-- Uses the fixed bundled profile rather than project/global overrides.
-- Child tools: `read`, `grep`, `find`, `ls`, and parent communication `ask_question`.
-- No shell/mutation tools, nested delegation, or child skill discovery.
-- Fresh context with a lineage link; no copied parent conversation.
-- Defaults to the parent's selected model; explicit tool-call overrides are possible.
-  Both parent and child work consume tokens. No new provider is configured.
-- The existing Herdr reporting hook is explicitly loaded into the child if present;
-  its source is unchanged. Parent safety hooks remain as configured.
+- The bundled `scout` has `read`, `grep`, `find`, `ls`, and parent
+  communication via `ask_question`. Researcher and worker have separate tool lists.
+- New sessions use the context and tools defined by their selected profile.
 - Completion reports are capped at 16 KiB / 400 lines. Full output stays in the child
   session; artifacts and snapshots remain for inspection/resume.
 - New handoff directories/files use explicit private permissions, without relying

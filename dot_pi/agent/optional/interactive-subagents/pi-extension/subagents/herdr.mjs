@@ -2,19 +2,14 @@
 // and explicit pane IDs are mandatory. Only panes created here are controlled.
 import { execFileSync, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdirSync, mkdtempSync, writeFileSync, readFileSync, statSync, unlinkSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
-import { setTimeout as sleep } from 'node:timers/promises';
+import { inHerdrCli } from './herdr-context.mjs';
+import { createHerdrLauncher, shellEscape } from './herdr-launch.mjs';
 
 const execAsync = promisify(execFile);
 const CLI_OPTIONS = { encoding: 'utf8', timeout: 5000, maxBuffer: 256 * 1024 };
-const HINT = 'Run Pi inside a Herdr-managed pane; in pi-lean, enable with /subagents on. Plain-terminal subagents are not supported.';
+const HINT = 'Run Pi inside a Herdr-managed pane; in pi-lean, enable with /subagents. Plain-terminal subagents are not supported.';
 
-export function shellEscape(value) {
-  if (typeof value !== 'string' || value.includes('\0')) throw new Error('Invalid shell argument');
-  return "'" + value.replace(/'/g, "'\\''") + "'";
-}
+export { shellEscape };
 
 export function createHerdrBackend({
   env = process.env,
@@ -22,9 +17,14 @@ export function createHerdrBackend({
   runAsync = async (args) => (await execAsync('herdr', args, CLI_OPTIONS)).stdout,
 } = {}) {
   const owned = new Set();
-  const completionFiles = new Map();
+  const launcher = createHerdrLauncher({
+    sendCommand,
+    checkLiveness: async pane => { await readScreenAsync(pane, 1); },
+    livenessError: 'Child pane disappeared or could not be read three times; completion is unconfirmed.',
+    tempPrefix: 'pi-herdr-subagent-',
+  });
   const validId = (id) => typeof id === 'string' && /^[A-Za-z0-9][A-Za-z0-9:_-]{0,127}$/.test(id);
-  const inHerdr = () => env.HERDR_ENV === '1' && validId(env.HERDR_PANE_ID) && !!env.HERDR_SOCKET_PATH;
+  const inHerdr = () => inHerdrCli(env);
   function requireHerdr() {
     if (!inHerdr()) throw new Error(HINT);
   }
@@ -75,27 +75,6 @@ export function createHerdrBackend({
     if (typeof command !== 'string' || command.includes('\0')) throw new Error('Invalid pane input');
     call(['pane', 'run', pane, command]);
   }
-  function sendLongCommand(pane, command, options = {}) {
-    requireOwned(pane);
-    const path = options.scriptPath ?? join(mkdtempSync(join(tmpdir(), 'pi-herdr-subagent-')), 'launch.sh');
-    mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-    // Parent completion is file-backed, not recognized from model-controlled
-    // terminal text. The launcher passes an explicit exit-code writer.
-    const donePath = `${path}.done`;
-    const preamble = (options.scriptPreamble ?? '').split('\n').map(line => '# ' + line).join('\n');
-    const marker = /; echo '__SUBAGENT_DONE_'\$\?'__'$/;
-    if (!marker.test(command)) throw new Error('Unsupported launch command: missing exit-status trailer');
-    const invocation = command.replace(marker, '');
-    const shDone = donePath.replace(/\\/g, '/');
-    const body = `${invocation}\npi_child_status=$?\nprintf '%s\\n' "$pi_child_status" > ${shellEscape(shDone + '.tmp')}\nmv -- ${shellEscape(shDone + '.tmp')} ${shellEscape(shDone)}\nexit "$pi_child_status"\n`;
-    writeFileSync(path, `#!/usr/bin/env bash\numask 077\n${preamble}\n${body}`, { mode: 0o600, flag: 'wx' });
-    completionFiles.set(pane, donePath);
-    const shPath = path.replace(/\\/g, '/');
-    const runner = process.platform === 'win32' ? 'sh' : 'bash';
-    try { sendCommand(pane, `${runner} ${shellEscape(shPath)}`); }
-    catch (error) { completionFiles.delete(pane); throw error; }
-    return path;
-  }
   function readArgs(pane, lines) {
     requireOwned(pane);
     const count = Number.isFinite(lines) ? Math.min(400, Math.max(1, Math.floor(lines))) : 50;
@@ -111,46 +90,15 @@ export function createHerdrBackend({
     requireOwned(pane);
     call(['pane', 'close', pane]);
     owned.delete(pane);
-    completionFiles.delete(pane);
+    launcher.forget(pane);
   }
-  function readSmall(path, max = 8192) {
-    if (statSync(path).size > max) throw new Error('Oversized child status file');
-    return readFileSync(path, 'utf8');
+  function sendLongCommand(pane, command, options) {
+    requireOwned(pane);
+    return launcher.sendLongCommand(pane, command, options);
   }
   async function pollForExit(pane, signal, options) {
     requireOwned(pane);
-    const start = Date.now();
-    let readFailures = 0;
-    const delay = Math.max(10, options.interval ?? 1000);
-    while (true) {
-      signal.throwIfAborted();
-      if (options.sessionFile) {
-        try {
-          const path = `${options.sessionFile}.exit`;
-          const data = JSON.parse(readSmall(path));
-          unlinkSync(path);
-          if (data.type === 'error') return { reason: 'error', exitCode: 1, errorMessage: String(data.errorMessage || 'Child provider error').slice(0, 2048) };
-          return { reason: 'done', exitCode: 0 };
-        } catch { /* Not written yet or incomplete. */ }
-      }
-      const donePath = completionFiles.get(pane);
-      if (donePath) {
-        try {
-          const status = readSmall(donePath, 32).trim();
-          if (/^\d{1,3}$/.test(status) && Number(status) <= 255) {
-            return { reason: 'sentinel', exitCode: Number(status) };
-          }
-        } catch { /* Child is still running. */ }
-      }
-      // Check liveness, but never interpret terminal contents as completion.
-      try { await readScreenAsync(pane, 1); readFailures = 0; }
-      catch {
-        if (++readFailures >= 3) return { reason: 'error', exitCode: 1, errorMessage: 'Child pane disappeared or could not be read three times; completion is unconfirmed.' };
-      }
-      signal.throwIfAborted();
-      options.onTick?.(Math.floor((Date.now() - start) / 1000));
-      await sleep(delay, undefined, { signal });
-    }
+    return launcher.pollForExit(pane, signal, options);
   }
   return { isMuxAvailable, muxSetupHint: () => HINT, createSurface, createSurfaceSplit, sendCommand, sendLongCommand, readScreen, readScreenAsync, closeSurface, pollForExit };
 }

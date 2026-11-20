@@ -25,10 +25,13 @@ try {
   Object.assign(process.env, {
     PATH:bin+':'+oldEnv.PATH, PI_OFFLINE:'1', PI_CODING_AGENT_DIR:config,
     HERDR_ENV:'1', HERDR_PANE_ID:'w9:p1', HERDR_SOCKET_PATH:join(root,'not-a-real-socket'),
-    PI_SUBAGENT_HERDR_TRIAL:'1', PI_SUBAGENT_MUX:'herdr', PI_SUBAGENT_ALLOWED:'trial-scout',
+    PI_SUBAGENT_MUX:'herdr',
     PI_SUBAGENT_SHELL_READY_DELAY_MS:'0', HERDR_MOCK_ROOT:root,
   });
   delete process.env.PI_SUBAGENT_AGENT;
+  delete process.env.PI_SUBAGENT_ALLOWED;
+  delete process.env.PI_SUBAGENT_MODEL;
+  delete process.env.PI_SUBAGENT_KEEP_OPEN;
   writeFileSync(join(bin,'herdr'), `#!/usr/bin/env node
 const fs=require('node:fs'),p=require('node:path');
 const r=process.env.HERDR_MOCK_ROOT,a=process.argv.slice(2),log=p.join(r,'herdr.log');
@@ -44,7 +47,7 @@ else {console.error('Unexpected mock Herdr command');process.exit(2)}
   writeFileSync(join(bin,'pi'), `#!/usr/bin/env node
 const fs=require('node:fs'),p=require('node:path');
 const r=process.env.HERDR_MOCK_ROOT,a=process.argv.slice(2);
-fs.appendFileSync(p.join(r,'pi.log'),JSON.stringify({args:a,trial:process.env.PI_SUBAGENT_HERDR_TRIAL,subagentsDefault:process.env.PI_SUBAGENTS_DEFAULT,cwd:process.cwd()})+'\\n');
+fs.appendFileSync(p.join(r,'pi.log'),JSON.stringify({args:a,subagentsDefault:process.env.PI_SUBAGENTS_DEFAULT,cwd:process.cwd()})+'\\n');
 const i=a.indexOf('--session'); if(i<0)process.exit(0);
 const f=a[i+1];
 fs.appendFileSync(f,JSON.stringify({type:'message',id:'fixture-'+Date.now(),parentId:null,timestamp:new Date().toISOString(),message:{role:'assistant',content:[{type:'text',text:'FIXTURE RESULT '+ 'x'.repeat(20000)}],stopReason:'stop',model:'fixture-model',provider:'fixture',usage:{input:1,output:1,cacheRead:0,cacheWrite:0,totalTokens:2,cost:{total:0}}}})+'\\n');
@@ -68,48 +71,36 @@ fs.appendFileSync(f,JSON.stringify({type:'message',id:'fixture-'+Date.now(),pare
   const cliCalls=()=>readFileSync(join(root,'herdr.log'),'utf8').trim().split('\n').map(JSON.parse);
   const childCalls=()=>readFileSync(join(root,'pi.log'),'utf8').trim().split('\n').map(JSON.parse);
 
-  await check('only the fixed read-only trial profile is discoverable',async()=>{
+  await check('only the three regular profiles are discoverable',async()=>{
     const list=await invoke('subagents_list',{});
-    assert.deepEqual(list.details.agents.map(a=>a.name),['trial-scout']);
+    assert.deepEqual(list.details.agents.map(a=>a.name).sort(),['researcher','scout','worker']);
     assert.ok(!('body' in list.details.agents[0]));
-    const profile=module.__test__.loadAgentDefaults('trial-scout');
+    const profile=module.__test__.loadAgentDefaults('scout');
     assert.equal(profile.tools,'read, grep, find, ls');assert.equal(profile.subagentAgents,undefined);
   });
-  await check('project agent definitions cannot override the trial profile',()=>{
-    const original=process.cwd();
-    const dir=join(project,'.pi','agents'); mkdirSync(dir,{recursive:true});
-    writeFileSync(join(dir,'trial-scout.md'),'---\nname: trial-scout\ntools: bash,write\n---\nWrong profile');
-    try{process.chdir(project);assert.equal(module.__test__.loadAgentDefaults('trial-scout').tools,'read, grep, find, ls')}
-    finally{process.chdir(original)}
-  });
-  await check('other agents and agentless launches are rejected before creating panes',async()=>{
-    for(const agent of ['worker','scout','researcher',undefined]){
+  await check('unknown and agentless launches are rejected before creating panes',async()=>{
+    for(const agent of ['trial-scout',undefined]){
       const r=await invoke('subagent',{agent,task:'must not run'});assert.ok(r.details.error);
     }
     assert.ok(!existsSync(join(root,'herdr.log')));
   });
   await check('already-cancelled launches create no panes',async()=>{
     const c=new AbortController();c.abort();
-    await assert.rejects(invoke('subagent',{agent:'trial-scout',task:'cancelled'},c.signal),/cancelled/);
+    await assert.rejects(invoke('subagent',{agent:'scout',task:'cancelled'},c.signal),/cancelled/);
     assert.ok(!cliCalls().some(a=>a[1]==='split'));
   });
   let started;
   await check('launch is asynchronous and snapshots parent model/cwd/read-only tools',async()=>{
-    started=await invoke('subagent',{agent:'trial-scout',name:'Scout',task:'Inspect the fixture'});
+    started=await invoke('subagent',{agent:'scout',name:'Scout',task:'Inspect the fixture'});
     assert.equal(started.details.status,'started');
     const loadout=JSON.parse(readFileSync(started.details.sessionFile+'.loadout.json','utf8'));
     assert.equal(loadout.model,'fixture/fixture-model');assert.equal(loadout.cwd,project);
     assert.equal(loadout.toolAllowlist,'read,grep,find,ls,ask_question');
     assert.equal(loadout.spawnable,null);
     const script=readFileSync(started.details.launchScriptFile,'utf8');
-    assert.match(script,/--no-skills/);assert.match(script,/--no-extensions/);
-    assert.match(script,/--model 'fixture\/fixture-model'/);
+    assert.match(script,/--no-extensions/);
+    assert.match(script,/--model 'fixture\/fixture-model:low'/);
     assert.equal(messages.length,0);
-  });
-  await check('a second scout cannot launch while one is active',async()=>{
-    const r=await invoke('subagent',{agent:'trial-scout',name:'Other',task:'no'});
-    assert.equal(r.details.error,'trial concurrency limit');
-    assert.equal(cliCalls().filter(a=>a[1]==='split').length,1);
   });
   await check('question handoff and reply target the child, not the parent pane',async()=>{
     writeFileSync(started.details.sessionFile+'.ask',JSON.stringify({question:'Fixture clarification?'}));
@@ -137,19 +128,70 @@ fs.appendFileSync(f,JSON.stringify({type:'message',id:'fixture-'+Date.now(),pare
     await until(()=>messages.filter(m=>m.customType==='subagent_result').length===2,'resume completion');
     const args=childCalls().at(-1).args;
     assert.equal(args[args.indexOf('--tools')+1],'read,grep,find,ls,ask_question');
-    assert.equal(args[args.indexOf('--model')+1],'fixture/fixture-model');
-    assert.ok(args.includes('--no-skills'));assert.ok(args.includes('--no-extensions'));
+    assert.equal(args[args.indexOf('--model')+1],'fixture/fixture-model:low');
+    assert.ok(args.includes('--no-extensions'));
   });
-  await check('widened resume snapshots are refused',async()=>{
+  await check('resume requires a loadout snapshot',async()=>{
     const path=started.details.sessionFile+'.loadout.json';
-    const original=readFileSync(path,'utf8'), loadout=JSON.parse(original);
-    loadout.toolAllowlist+='bash';writeFileSync(path,JSON.stringify(loadout));
-    try{await assert.rejects(invoke('subagent_message',{name:'Scout',message:'no'}),/read-only/)}
-    finally{writeFileSync(path,original)}
+    const original=readFileSync(path,'utf8');
+    rmSync(path);
+    try {
+      const result = await invoke('subagent_message',{name:'Scout',message:'no'});
+      assert.match(result.details.error,/no sandbox snapshot/);
+    } finally { writeFileSync(path,original); }
+  });
+  await check('finished turns report back and leave the same pane ready for follow-up',async()=>{
+    const run = await invoke('subagent',{agent:'scout',name:'Scout',task:'Leave pane open'});
+    assert.equal(run.details.name,'Scout-2');
+    const script = readFileSync(run.details.launchScriptFile,'utf8');
+    assert.match(script,/PI_SUBAGENT_REPORT_TURNS=1/);
+    assert.doesNotMatch(script,/PI_SUBAGENT_AUTO_EXIT=1/);
+
+    const active = module.__test__.runningSubagents.get(run.details.id);
+    const childEntry = resolve(entry,'../subagent-done.ts');
+    const child = await jiti.import(childEntry);
+    const childHandlers = new Map();
+    process.env.PI_SUBAGENT_REPORT_TURNS='1';
+    process.env.PI_SUBAGENT_ACTIVITY_FILE=active.activityFile;
+    process.env.PI_SUBAGENT_ID=active.id;
+    delete process.env.PI_SUBAGENT_AUTO_EXIT;
+    child.default({
+      on(name,handler){childHandlers.set(name,handler)},
+      registerTool(){}, registerShortcut(){},
+    });
+    delete process.env.PI_SUBAGENT_REPORT_TURNS;
+    delete process.env.PI_SUBAGENT_ACTIVITY_FILE;
+    delete process.env.PI_SUBAGENT_ID;
+    const childCtx = {shutdown(){assert.fail('child shut down at the end of a turn')}};
+    const endTurn = text => {
+      // The real child has its own process and no children of its own.
+      const key = Symbol.for('pi-subagents/running-children-count');
+      const parentCount = globalThis[key];
+      delete globalThis[key];
+      try {
+        childHandlers.get('agent_end')({messages:[
+          { role:'assistant', stopReason:'stop', content:[{type:'text',text}] },
+        ]},childCtx);
+      } finally { globalThis[key] = parentCount; }
+    };
+
+    endTurn('Initial result with a live pane');
+    await until(()=>messages.some(m=>m.content.includes('Initial result with a live pane')),'live first result');
+    assert.ok(!cliCalls().some(a=>a[1]==='close'&&a[2]===active.surface));
+
+    const followup=await invoke('subagent_message',{name:run.details.name,message:'Follow up in the same pane'});
+    assert.equal(followup.details.status,'steered');
+    assert.equal(cliCalls().filter(a=>a[1]==='run').at(-1)[2],active.surface);
+
+    endTurn('Follow-up result with a live pane');
+    await until(()=>messages.some(m=>m.content.includes('Follow-up result with a live pane')),'live follow-up result');
+    assert.ok(!cliCalls().some(a=>a[1]==='close'&&a[2]===active.surface));
+
+    endTurn('Direct user follow-up stays in the child pane');
+    await until(()=>!existsSync(active.activityFile+'.turn-3'),'direct turn consumed');
+    assert.ok(!messages.some(m=>m.content.includes('Direct user follow-up stays in the child pane')));
   });
   await check('shutdown cancels its child without sending stale completion turns',async()=>{
-    const r=await invoke('subagent',{agent:'trial-scout',name:'Scout',task:'Wait for shutdown'});
-    assert.equal(r.details.name,'Scout-2');
     const before=messages.filter(m=>m.customType==='subagent_result').length;
     shutdown();
     await until(()=>cliCalls().some(a=>a[1]==='close'&&a[2]==='w9:p4'),'shutdown cleanup');

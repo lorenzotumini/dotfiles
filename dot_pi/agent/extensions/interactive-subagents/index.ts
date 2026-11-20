@@ -1,11 +1,9 @@
 import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent';
 import subagents, { getRunningSubagentCount } from '../../optional/interactive-subagents/pi-extension/subagents/index.ts';
+import { insideHerdr } from '../../optional/interactive-subagents/pi-extension/subagents/herdr-context.mjs';
 
 const TOOLS = ['subagent', 'subagent_message', 'subagents_list'];
 const ENTRY = 'herdr-subagents-enabled';
-const insideHerdr = () => process.env.HERDR_ENV === '1' &&
-  !!process.env.HERDR_PANE_ID && !!process.env.HERDR_SOCKET_PATH &&
-  (!process.env.PI_SUBAGENT_MUX || process.env.PI_SUBAGENT_MUX === 'herdr');
 
 export default function integratedSubagents(pi: ExtensionAPI) {
   const profile = process.env.PI_SUBAGENTS_DEFAULT === 'off' ? 'lean' : 'main';
@@ -60,7 +58,7 @@ export default function integratedSubagents(pi: ExtensionAPI) {
       const raw = args.trim().toLowerCase();
       const notify = (text: string, kind: 'info' | 'warning' = 'info') => { if (ctx.hasUI) ctx.ui.notify(text, kind); };
       if (raw === 'status') {
-        notify(`Subagents: ${enabled ? 'on' : 'off'} (${profile} profile). ${insideHerdr() ? 'Herdr context available.' : 'Requires a Herdr-managed pane; no plain-terminal fallback.'}`);
+        notify(`Subagents: ${enabled ? 'on' : 'off'} (${profile} profile). ${insideHerdr() ? 'Herdr context available (CLI or app).' : 'Requires a Herdr-managed terminal (CLI pane or Herdr app); no plain-terminal fallback.'}`);
         return;
       }
       if (raw !== '') { notify('Use /subagents to toggle, or /subagents:status to inspect state.', 'warning'); return; }
@@ -71,7 +69,7 @@ export default function integratedSubagents(pi: ExtensionAPI) {
         return;
       }
       if (!want && getRunningSubagentCount() > 0) {
-        notify('Wait for the current scout to finish before disabling subagents.', 'warning');
+        notify('Close the open subagent panes before disabling subagents.', 'warning');
         return;
       }
       setEnabled(want);
